@@ -1,0 +1,289 @@
+/* Search AI Styles */
+
+/* Container Styles */
+.searchai-container {
+    --primary-color: #4a6ee0;
+    --secondary-color: #f8f8f8;
+    --text-color: #333333;
+    --border-radius: 8px;
+    --padding: 20px;
+    --max-height: 500px;
+    --message-spacing: 12px;
+    --transition-speed: 0.3s;
+    
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    color: var(--text-color);
+    background-color: #ffffff;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin: 20px 0;
+    overflow: hidden;
+}
+
+/* Chat Container */
+.searchai-chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: var(--max-height);
+}
+
+/* Messages Container */
+.searchai-messages {
+    flex: 1;
+    padding: var(--padding);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--message-spacing);
+    max-height: calc(var(--max-height) - 70px);
+    background-color: var(--secondary-color);
+}
+
+/* Message Styles */
+.searchai-message {
+    display: flex;
+    gap: 12px;
+    animation: fadeIn 0.3s ease-in-out;
+    position: relative;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* User Message */
+.searchai-message-user {
+    flex-direction: row-reverse;
+}
+
+/* Message Content */
+.searchai-message-content {
+    background-color: white;
+    padding: 12px 16px;
+    border-radius: 18px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    line-height: 1.5;
+    max-width: 80%;
+    position: relative;
+}
+
+.searchai-message-user .searchai-message-content {
+    background-color: var(--primary-color);
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+.searchai-message-ai .searchai-message-content {
+    background-color: white;
+    border-bottom-left-radius: 4px;
+}
+
+/* Avatar */
+.searchai-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background-color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.searchai-message-user .searchai-avatar {
+    background-color: var(--primary-color);
+}
+
+.searchai-message-ai .searchai-avatar {
+    background-color: #9BA3AF;
+}
+
+.searchai-avatar svg {
+    width: 24px;
+    height: 24px;
+    fill: white;
+}
+
+.searchai-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Input Container */
+.searchai-input-container {
+    padding: 16px var(--padding);
+    background-color: white;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.searchai-form {
+    display: flex;
+    gap: 10px;
+}
+
+.searchai-input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 24px;
+    font-size: 16px;
+    color: var(--text-color);
+    background-color: var(--secondary-color);
+    outline: none;
+    transition: border-color var(--transition-speed) ease;
+}
+
+.searchai-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(74, 110, 224, 0.2);
+}
+
+.searchai-submit {
+    width: 40px;
+    height: 40px;
+    border: none;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background-color var(--transition-speed) ease;
+}
+
+.searchai-submit:hover {
+    background-color: #3a5bbe;
+}
+
+.searchai-submit svg {
+    width: 24px;
+    height: 24px;
+    fill: white;
+}
+
+.searchai-submit:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* Relevant Links */
+.searchai-relevant-links {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.searchai-relevant-links ul {
+    margin: 8px 0 0 0;
+    padding-left: 20px;
+}
+
+.searchai-relevant-links li {
+    margin: 4px 0;
+}
+
+.searchai-relevant-links a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color var(--transition-speed) ease;
+}
+
+.searchai-relevant-links a:hover {
+    text-decoration: underline;
+}
+
+/* Loading Animation */
+.searchai-loading {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+}
+
+.searchai-loading span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    opacity: 0.6;
+    animation: loadingDots 1.4s infinite ease-in-out both;
+}
+
+.searchai-loading span:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.searchai-loading span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.searchai-loading span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes loadingDots {
+    0%, 80%, 100% {
+        transform: scale(0);
+    }
+    40% {
+        transform: scale(1);
+    }
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .searchai-message-content {
+        max-width: 90%;
+    }
+}
+
+@media (max-width: 480px) {
+    .searchai-container {
+        --padding: 12px;
+    }
+    
+    .searchai-message-content {
+        padding: 10px 14px;
+    }
+    
+    .searchai-input {
+        padding: 10px 14px;
+    }
+    
+    .searchai-submit {
+        width: 36px;
+        height: 36px;
+    }
+}
+
+/* Block Editor Specific Styles */
+.searchai-color-picker-label {
+    margin-top: 16px;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.searchai-editor .searchai-messages {
+    min-height: 300px;
+}
+
+/* Ensure links in the editor preview maintain contrast */
+.searchai-editor a {
+    color: var(--primary-color);
+}
+
+/* Fix for WordPress admin interface */
+.wp-admin .searchai-container {
+    box-sizing: border-box;
+}
+
+.wp-admin .searchai-container * {
+    box-sizing: border-box;
+}
