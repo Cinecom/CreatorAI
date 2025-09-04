@@ -232,6 +232,48 @@
 
 
     // Initialize settings page
+    function initGitHubUpdater() {
+        $('#check-github-updates').on('click', function() {
+            var button = $(this);
+            var statusDiv = $('#github-update-status');
+            
+            // Disable button and show loading
+            button.prop('disabled', true).text('Checking...');
+            statusDiv.html('<p style="color: #666;">Checking for updates...</p>');
+            
+            // Make AJAX request
+            $.post(caiAjax.ajax_url, {
+                action: 'cai_force_update_check',
+                nonce: caiAjax.nonce
+            })
+            .done(function(response) {
+                if (response.success) {
+                    if (response.data.update_available) {
+                        statusDiv.html(
+                            '<div style="padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px;">' +
+                            '<p style="margin: 0; color: #856404;"><strong>Update Available!</strong></p>' +
+                            '<p style="margin: 5px 0 0 0; color: #856404;">New version: ' + response.data.new_version + ' (current: ' + response.data.current_version + ')</p>' +
+                            '<p style="margin: 5px 0 0 0;"><a href="' + caiAjax.admin_url + 'plugins.php" class="button button-primary" style="margin-right: 10px;">Go to Plugins Page</a>' +
+                            '<a href="https://github.com/Cinecom/CreatorAI/compare/' + response.data.current_version + '...' + response.data.new_version + '" target="_blank" class="button button-secondary">View Changes</a></p>' +
+                            '</div>'
+                        );
+                    } else {
+                        statusDiv.html('<p style="color: #46b450;">✓ You have the latest version!</p>');
+                    }
+                } else {
+                    statusDiv.html('<p style="color: #dc3232;">Error: ' + (response.data || 'Unknown error') + '</p>');
+                }
+            })
+            .fail(function() {
+                statusDiv.html('<p style="color: #dc3232;">Error: Failed to check for updates. Please try again.</p>');
+            })
+            .always(function() {
+                // Re-enable button
+                button.prop('disabled', false).text('Check for Updates');
+            });
+        });
+    }
+
     function init() {
         initTabNavigation();
         initKeywordTags();
@@ -240,6 +282,7 @@
         initAPIConnections(); // Important: Initialize API connections here too
         initCourseCreatorSettings();
         initThemeStylingToggle();
+        initGitHubUpdater();
         
         // Add animation for smooth transitions
         setTimeout(function() {

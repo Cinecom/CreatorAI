@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(/D:\\Github\\CreatorAI/**)",
+      "Read(/D:\\Github\\CreatorAI\\pages/**)",
+      "Read(/D:\\Github\\CreatorAI\\pages/**)",
+      "Read(/D:\\Github\\CreatorAI\\pages/**)",
+      "Read(/D:\\Github\\CreatorAI\\js/**)",
+      "Read(/D:\\Github\\CreatorAI\\js/**)",
+      "Read(/D:\\Github\\CreatorAI\\js/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

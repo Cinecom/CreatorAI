@@ -39,6 +39,7 @@ include_once(ABSPATH . 'wp-admin/includes/plugin.php');
     require_once plugin_dir_path(__FILE__) . 'includes/searchai-functions.php';
     require_once plugin_dir_path(__FILE__) . 'includes/course-creator-functions.php';
     require_once plugin_dir_path(__FILE__) . 'includes/course-publisher-functions.php';
+    require_once plugin_dir_path(__FILE__) . 'includes/github-updater.php';
 
 
 
@@ -57,6 +58,7 @@ class Creator_AI {
     // Define class properties explicitly to avoid dynamic property deprecation
     public $version;
     public $api_settings;
+    public $github_updater;
 
 // PLUGIN SETUP
     public function __construct() {
@@ -94,6 +96,9 @@ class Creator_AI {
         //Course Creator
         add_action('before_delete_post', array($this, 'check_courses_page_deletion'));
         add_action('admin_notices', array($this, 'show_courses_page_deleted_notice'));
+        
+        // Initialize GitHub Updater
+        add_action('init', array($this, 'init_github_updater'));
     }
 
     public function load_plugin_data() {
@@ -120,6 +125,21 @@ class Creator_AI {
             'progress_timeout'       => 300000  // 5 minutes instead of 10 to prevent hosting blocks
         );
     }
+    
+    public function init_github_updater() {
+        if (is_admin()) {
+            $this->github_updater = new Creator_AI_GitHub_Updater(
+                __FILE__,
+                'Cinecom',
+                'CreatorAI',
+                'main'
+            );
+            
+            // Add admin notices for update notifications
+            $this->github_updater->add_admin_notices();
+        }
+    }
+    
     public function add_admin_menu() {
 
         add_menu_page(
@@ -169,6 +189,7 @@ class Creator_AI {
 
         wp_localize_script('cai-api-js', 'caiAjax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
+            'admin_url' => admin_url(),
             'nonce' => wp_create_nonce('cai_nonce')
         ));
         
@@ -332,6 +353,26 @@ class Creator_AI {
             'sanitize_callback' => array($this, 'sanitize_appearance_settings'),
             'default' => array()
         ));
+        
+        // GitHub updater settings
+        add_action('wp_ajax_cai_force_update_check', array($this, 'ajax_force_update_check'));
+    }
+    
+    public function ajax_force_update_check() {
+        if (!current_user_can('update_plugins')) {
+            wp_send_json_error('Insufficient permissions');
+        }
+        
+        if (!wp_verify_nonce($_POST['nonce'], 'cai_nonce')) {
+            wp_send_json_error('Invalid nonce');
+        }
+        
+        if (isset($this->github_updater)) {
+            $result = $this->github_updater->force_update_check();
+            wp_send_json_success($result);
+        } else {
+            wp_send_json_error('GitHub updater not initialized');
+        }
     }
 
 // PAGES

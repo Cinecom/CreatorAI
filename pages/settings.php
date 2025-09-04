@@ -131,6 +131,31 @@
                 </div>
 
 
+                <div class="cai-section box github-update-settings">
+                    <div class="cai-section-header">
+                        <h3>GitHub Updates</h3>
+                        <p>Manage automatic updates from GitHub repository.</p>
+                    </div>
+                    <div class="cai-section-content">
+                        <table class="form-table">
+                            <tr>
+                                <th scope="row">Update Information</th>
+                                <td>
+                                    <div class="cai-input-group">
+                                        <p><strong>Repository:</strong> Cinecom/CreatorAI</p>
+                                        <p><strong>Branch:</strong> main</p>
+                                        <p><strong>Current Version:</strong> <?php echo $this->version; ?></p>
+                                        <div id="github-update-status" style="margin: 10px 0;"></div>
+                                        <button type="button" id="check-github-updates" class="button">Check for Updates</button>
+                                        <a href="https://github.com/Cinecom/CreatorAI" target="_blank" class="button button-secondary" style="margin-left: 10px;">View Repository</a>
+                                    </div>
+                                    <p class="description">The plugin automatically checks for updates daily. Updates will appear in your WordPress admin like standard plugins.</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
                 <div class="cai-section box debug-settings">
                     <div class="cai-section-header">
                         <h3>Debug Settings</h3>
