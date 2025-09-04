@@ -2,7 +2,7 @@
 /*
 Plugin Name: Creator AI
 Description: The most power Wordpress plugin ever created! Powered by an A.I. more intelligent than the universe itself. 
-Version: 4.7.0
+Version: 4.7.1
 Author: <strong>Jordy Vandeput</strong> <em>(in reality written by A.I.)</em>
 */
 
