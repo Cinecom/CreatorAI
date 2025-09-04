@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Certificate of Completion</title>
+    <style>
+        @page {
+            margin: 0;
+            size: A4 portrait;
+        }
+        body {
+            font-family: "<?php echo $font_family; ?>", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+            box-sizing: border-box;
+            width: 210mm;
+            height: 297mm;
+            position: relative;
+        }
+        .certificate-container {
+            width: 210mm;
+            height: 297mm;
+            position: relative;
+            background-color: #ffffff;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        .certificate-border {
+            position: absolute;
+            top: 15mm;
+            left: 15mm;
+            width: 180mm;
+            height: 267mm;
+            border: <?php echo $border_width; ?>px solid <?php echo $border_color; ?>;
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+        .logo-area {
+            position: absolute;
+            top: 25mm;
+            left: 30mm;
+            right: 30mm;
+            text-align: center;
+            z-index: 10;
+        }
+        .certificate-logo {
+            max-width: 50mm;
+            max-height: 20mm;
+            height: auto;
+            width: auto;
+        }
+        .title {
+            position: absolute;
+            top: 65mm;
+            left: 30mm;
+            right: 30mm;
+            text-align: center;
+            font-size: <?php 
+                $base_title_size = min(max($title_size * 0.7, 18), 26);
+                echo $base_title_size;
+            ?>pt;
+            color: <?php echo $title_color; ?>;
+            text-transform: uppercase;
+            line-height: 1.1;
+            font-weight: bold;
+            word-wrap: break-word;
+        }
+        .subtitle {
+            position: absolute;
+            top: 85mm;
+            left: 30mm;
+            right: 30mm;
+            text-align: center;
+            font-size: 12pt;
+            color: #555;
+            line-height: 1.2;
+        }
+        .name {
+            position: absolute;
+            top: 115mm;
+            left: 30mm;
+            right: 30mm;
+            text-align: center;
+            font-size: <?php 
+                $name_length = strlen($student_name);
+                if ($name_length > 25) {
+                    echo "18pt";
+                } elseif ($name_length > 15) {
+                    echo "22pt";
+                } else {
+                    echo "26pt";
+                }
+            ?>;
+            color: #333;
+            font-weight: bold;
+            line-height: 1.2;
+            word-wrap: break-word;
+        }
+        .course-info {
+            position: absolute;
+            top: 150mm;
+            left: 30mm;
+            right: 30mm;
+            text-align: center;
+            font-size: <?php 
+                $course_length = strlen($course_title);
+                if ($course_length > 50) {
+                    echo "11pt";
+                } elseif ($course_length > 30) {
+                    echo "13pt";
+                } else {
+                    echo "15pt";
+                }
+            ?>;
+            color: #666;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+        .course-title {
+            font-weight: bold;
+            color: #333;
+        }
+        .date-id {
+            position: absolute;
+            top: 195mm;
+            left: 30mm;
+            right: 30mm;
+            text-align: center;
+            font-size: 10pt;
+            color: #777;
+            line-height: 1.3;
+        }
+        .signature-area {
+            position: absolute;
+            top: 225mm;
+            left: 30mm;
+            right: 30mm;
+            text-align: center;
+        }
+        .signature-image {
+            max-width: 40mm;
+            max-height: 15mm;
+            height: auto;
+            width: auto;
+            display: block;
+            margin: 0 auto 3mm auto;
+        }
+        .signature-line {
+            border-top: 1px solid #333;
+            width: 60mm;
+            margin: 0 auto 3mm auto;
+        }
+        .company-name {
+            font-size: 11pt;
+            color: #555;
+            word-wrap: break-word;
+        }
+
+        /* Layout specific styles */
+        .classic .certificate-border {
+            border-style: double;
+            border-width: <?php echo ($border_width * 1.5); ?>px;
+        }
+        .modern .title {
+            letter-spacing: 1.5px;
+        }
+        .modern .name {
+            border-bottom: 2px solid <?php echo $title_color; ?>;
+            padding-bottom: 2mm;
+        }
+        .standard .certificate-border {
+            border-radius: 5mm;
+        }
+    </style>
+</head>
+<body>
+    <div class="certificate-container <?php echo $layout; ?>">
+        <div class="certificate-border"></div>
+        
+        <?php if ($logo_url) : ?>
+            <div class="logo-area">
+                <img src="<?php echo $logo_url; ?>" class="certificate-logo" alt="Logo" />
+            </div>
+        <?php endif; ?>
+
+        <div class="title">Certificate of Completion</div>
+        
+        <div class="subtitle">This certifies that</div>
+        
+        <div class="name"><?php echo esc_html($student_name); ?></div>
+        
+        <div class="course-info">
+            has successfully completed the course<br>
+            <span class="course-title">"<?php echo esc_html($course_title); ?>"</span>
+        </div>
+        
+        <div class="date-id">
+            Date: <?php echo esc_html($formatted_date); ?><br>
+            Certificate ID: <?php echo esc_html($certificate_id); ?>
+        </div>
+
+        <div class="signature-area">
+            <?php if ($signature_url) : ?>
+                <img src="<?php echo $signature_url; ?>" class="signature-image" alt="Signature" />
+            <?php endif; ?>
+            <div class="signature-line"></div>
+            <div class="company-name"><?php echo esc_html($company_name); ?></div>
+        </div>
+    </div>
+</body>
+</html>

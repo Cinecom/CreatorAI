@@ -1,0 +1,2346 @@
+/**
+ * Course Publisher Frontend Styles - Optimized & Dynamic
+ * 
+ * Modern, professional styling for published courses with improved
+ * layout, navigation, progress tracking, quiz, and certificate presentation.
+ * All colors are now dynamic based on user settings.
+ */
+
+/* ===== Base Variables & Reset ===== */
+:root {
+  /* Default colors - will be overridden by dynamic CSS */
+  --cai-primary-color: #b91c1c;
+  --cai-accent-color: #15803d;
+  
+  /* Neutral Grays */
+  --cai-text-color: #334155;
+  --cai-text-light: #64748b;
+  --cai-text-dark: #0f172a;
+  --cai-background-color: #ffffff;
+  --cai-background-light: #f8fafc;
+  --cai-background-dark: #f1f5f9;
+  --cai-border-color: #cbd5e1;
+  --cai-border-light: #e2e8f0;
+  
+  /* Derived colors - for backwards compatibility */
+  --cai-primary-light: var(--cai-primary-color);
+  --cai-primary-lighter: var(--cai-primary-color);
+  --cai-primary-subtle: var(--cai-background-light);
+  --cai-hover-color: var(--cai-accent-color);
+  --cai-success-color: var(--cai-accent-color);
+  --cai-warning-color: var(--cai-accent-color);
+  --cai-success-color-rgb: 21, 128, 61;
+  --cai-error-color: var(--cai-primary-color);
+  
+  /* Typography */
+  --cai-heading-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --cai-body-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --cai-base-font-size: 16px;
+  --cai-heading-font-size: 2rem;
+  --cai-subheading-font-size: 1.5rem;
+  
+  /* Layout */
+  --cai-content-padding: 2rem;
+  --cai-section-spacing: 2rem;
+  --cai-border-radius: 8px;
+  --cai-sidebar-width: 25%;
+  
+  /* Shadows */
+  --cai-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --cai-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --cai-shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --cai-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  /* Transitions */
+  --cai-transition-fast: 200ms ease;
+  --cai-transition: 300ms ease;
+  --cai-transition-slow: 400ms ease;
+}
+
+/* Apply base styles */
+.cai-course-container {
+  width: 100%;
+  margin: 0 0 2rem 0;
+  padding: var(--cai-content-padding);
+  line-height: 1.6;
+  color: var(--cai-text-color);
+  background-color: var(--cai-background-color);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Course Container typography - only when custom styling is active */
+body:not(.cai-theme-styling-active) .cai-course-container {
+  font-family: var(--cai-body-font);
+  font-size: var(--cai-base-font-size);
+}
+
+/* Typography Resets */
+.cai-course-container h1, 
+.cai-course-container h2, 
+.cai-course-container h3, 
+.cai-course-container h4,
+.cai-course-container h5,
+.cai-course-container h6 {
+  margin-top: 0;
+}
+
+/* Heading typography - only when custom styling is active */
+body:not(.cai-theme-styling-active) .cai-course-container h1, 
+body:not(.cai-theme-styling-active) .cai-course-container h2, 
+body:not(.cai-theme-styling-active) .cai-course-container h3, 
+body:not(.cai-theme-styling-active) .cai-course-container h4,
+body:not(.cai-theme-styling-active) .cai-course-container h5,
+body:not(.cai-theme-styling-active) .cai-course-container h6 {
+  font-family: var(--cai-heading-font);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--cai-text-dark);
+}
+
+.cai-course-container p {
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+}
+
+.cai-course-container a {
+  color: var(--cai-primary-color);
+  text-decoration: none;
+  transition: color var(--cai-transition-fast);
+}
+
+.cai-course-container a:hover {
+  color: var(--cai-hover-color);
+}
+
+/* Override default link behavior */
+.cai-section-link:hover,
+.cai-view-certificate-btn:hover,
+.cai-course-card-link:hover {
+  text-decoration: none !important;
+}
+
+/* ===== Course Header ===== */
+.cai-course-header {
+  width: 100%;
+  margin: 2rem 0;
+  padding: 0;
+  background-color: var(--cai-background-color);
+  border-radius: var(--cai-border-radius);
+  border: 1px solid var(--cai-border-color);
+  overflow: hidden;
+  box-shadow: var(--cai-shadow);
+}
+
+.cai-course-header-content {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  max-width: 100%;
+  position: relative;
+}
+
+.cai-course-thumbnail {
+  width: 320px;
+  height: 180px;
+  flex-shrink: 0;
+  overflow: hidden;
+  background-color: var(--cai-background-light);
+  position: relative;
+}
+
+.cai-course-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cai-course-thumbnail-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--cai-background-light);
+  color: var(--cai-text-light);
+  font-size: 3rem;
+  font-weight: 300;
+}
+
+.cai-course-header-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 1.5rem;
+}
+
+.cai-course-header-top {
+  flex: 1;
+}
+
+.cai-course-title {
+  font-size: 1.75rem;
+  color: var(--cai-text-dark);
+  margin: 0 0 0.75rem 0;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+/* Course title font - only when custom styling is active */
+body:not(.cai-theme-styling-active) .cai-course-title {
+  font-family: var(--cai-heading-font);
+}
+
+.cai-course-description {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--cai-text-color);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Meta Information */
+.cai-course-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--cai-border-light);
+}
+
+.cai-course-time,
+.cai-course-difficulty,
+.cai-course-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--cai-border-radius);
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all var(--cai-transition-fast);
+  background-color: var(--cai-background-light);
+  color: var(--cai-text-color);
+  border: 1px solid var(--cai-border-color);
+}
+
+.cai-course-progress {
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0.75rem 1rem;
+  min-width: 120px;
+}
+
+.cai-course-time-icon,
+.cai-course-difficulty-icon,
+.cai-course-progress-icon {
+  width: 1rem;
+  height: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  color: var(--cai-text-light);
+}
+
+.cai-course-progress .cai-progress-bar {
+  margin-top: 0.375rem;
+  width: 100px;
+  min-width: 100px;
+}
+
+/* Course Details */
+.cai-course-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 0;
+  background-color: var(--cai-background-light);
+  border-top: 1px solid var(--cai-border-color);
+}
+
+.cai-course-audience,
+.cai-course-objectives {
+  padding: 1.25rem 1.5rem;
+  transition: background-color var(--cai-transition-fast);
+}
+
+.cai-course-audience {
+  border-right: 1px solid var(--cai-border-color);
+}
+
+.cai-course-audience:hover,
+.cai-course-objectives:hover {
+  background-color: var(--cai-background-color);
+}
+
+body:not(.cai-theme-styling-active) .cai-course-audience h3,
+body:not(.cai-theme-styling-active) .cai-course-objectives h3 {
+  font-family: var(--cai-heading-font);
+}
+
+/* Course audience/objectives h3 typography - only when custom styling is active */
+body:not(.cai-theme-styling-active) .cai-course-audience h3,
+body:not(.cai-theme-styling-active) .cai-course-objectives h3 {
+  font-size: 1rem;
+  color: var(--cai-text-dark);
+  font-weight: 600;
+}
+
+.cai-course-audience h3,
+.cai-course-objectives h3 {
+  margin: 0 0 0.75rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Course audience/objectives h3 icon typography - only when custom styling is active */
+body:not(.cai-theme-styling-active) .cai-course-audience h3 i,
+body:not(.cai-theme-styling-active) .cai-course-objectives h3 i {
+  color: var(--cai-text-light);
+  font-size: 0.875rem;
+}
+
+.cai-course-audience p,
+.cai-course-objectives-content {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--cai-text-color);
+  line-height: 1.5;
+}
+
+.cai-course-objectives-content ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.cai-course-objectives-content li {
+  margin-bottom: 0.375rem;
+}
+
+/* ===== Progress Tracking ===== */
+.cai-progress-bar {
+  height: 0.25rem;
+  background-color: var(--cai-border-color);
+  border-radius: var(--cai-border-radius);
+  width: 100%;
+  margin-top: 0.25rem;
+  overflow: hidden;
+}
+
+.cai-progress-bar-fill {
+  height: 100%;
+  background-color: var(--cai-primary-color);
+  width: 0;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--cai-border-radius);
+}
+
+/* ===== Content Layout ===== */
+.cai-course-content-wrapper {
+  display: flex;
+  gap: 2rem;
+  position: relative;
+}
+
+/* ===== Sidebar Navigation ===== */
+.cai-course-sidebar {
+  width: var(--cai-sidebar-width);
+  flex-shrink: 0;
+  background-color: var(--cai-background-color);
+  border-radius: var(--cai-border-radius);
+  border: 1px solid var(--cai-border-color);
+  margin-bottom: 2rem;
+  height: fit-content;
+  transition: all var(--cai-transition-fast);
+}
+
+.cai-sidebar-sticky {
+  position: sticky;
+  top: 2rem;
+  height: fit-content;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--cai-border-color) var(--cai-background-light);
+}
+
+.cai-sidebar-static {
+  position: static;
+  height: fit-content;
+  max-height: none;
+  overflow-y: visible;
+}
+
+.cai-sidebar-sticky::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cai-sidebar-sticky::-webkit-scrollbar-track {
+  background: var(--cai-background-light);
+}
+
+.cai-sidebar-sticky::-webkit-scrollbar-thumb {
+  background-color: var(--cai-primary-color);
+  border-radius: 20px;
+  border: 2px solid var(--cai-background-light);
+}
+
+.cai-sidebar-left {
+  order: -1;
+}
+
+.cai-sidebar-right {
+  order: 1;
+}
+
+.cai-course-nav {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+body:not(.cai-theme-styling-active) .cai-course-nav-title {
+  font-family: var(--cai-heading-font);
+}
+
+.cai-course-nav-title {
+  font-size: 1.25rem;
+  color: var(--cai-text-dark);
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--cai-border-color);
+  font-weight: 600;
+}
+
+.cai-course-chapters {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cai-course-chapter {
+  margin-bottom: 1rem;
+  border-radius: var(--cai-border-radius);
+  transition: all var(--cai-transition-fast);
+}
+
+.cai-chapter-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--cai-border-radius);
+  cursor: pointer;
+  transition: background-color var(--cai-transition-fast);
+}
+
+.cai-chapter-header:hover {
+  background-color: var(--cai-border-light);
+}
+
+.cai-chapter-toggle {
+  width: 1.25rem;
+  height: 1.25rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--cai-border-radius);
+  background-color: var(--cai-background-light);
+  flex-shrink: 0;
+  color: var(--cai-text-light);
+  font-size: 0.75rem;
+}
+
+.cai-chapter-toggle::before {
+  content: '\f054';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  transition: transform var(--cai-transition-fast);
+}
+
+.cai-chapter-expanded .cai-chapter-toggle::before {
+  transform: rotate(90deg);
+}
+
+body:not(.cai-theme-styling-active) .cai-chapter-title {
+  font-family: var(--cai-heading-font);
+}
+
+.cai-chapter-title {
+  font-size: 1rem;
+  color: var(--cai-text-color);
+  margin: 0;
+  flex: 1;
+  font-weight: 500;
+  transition: color var(--cai-transition-fast);
+}
+
+.cai-chapter-header:hover .cai-chapter-title {
+  color: var(--cai-primary-color);
+}
+
+.cai-chapter-sections {
+  list-style: none;
+  margin: 0 0 0 2.25rem;
+  padding: 0;
+  display: none;
+  overflow: hidden;
+  transition: all var(--cai-transition-fast);
+}
+
+.cai-chapter-expanded .cai-chapter-sections {
+  display: block;
+  animation: slideDown 0.3s ease forwards;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cai-section-item {
+  margin-bottom: 0.625rem;
+  position: relative;
+  border-radius: var(--cai-border-radius);
+  transition: background-color var(--cai-transition-fast);
+}
+
+.cai-section-item:hover {
+  background-color: var(--cai-border-light);
+}
+
+.cai-section-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--cai-text-color);
+  text-decoration: none;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9375rem;
+  transition: all var(--cai-transition-fast);
+  border-radius: var(--cai-border-radius);
+}
+
+.cai-section-link:hover,
+.cai-section-link:active,
+.cai-section-link:focus {
+  color: var(--cai-primary-color);
+  text-decoration: none;
+  background-color: var(--cai-primary-subtle);
+  border-radius: var(--cai-border-radius);
+}
+
+.cai-progress-circle {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 0.125rem solid var(--cai-text-light);
+  border-radius: 50%;
+  background-color: transparent;
+  transition: all var(--cai-transition-fast);
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  font-size: 0.5rem;
+}
+
+.cai-section-completed .cai-progress-circle {
+  background-color: var(--cai-primary-color);
+  border-color: var(--cai-primary-color);
+  color: white;
+}
+
+.cai-section-completed .cai-progress-circle::before {
+  content: '\f00c';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+}
+
+.cai-section-title {
+  flex: 1;
+  position: relative;
+  padding-right: 0.5rem;
+  color: inherit;
+}
+
+.cai-section-active {
+  background-color: var(--cai-primary-subtle);
+}
+
+.cai-section-active .cai-section-link {
+  color: var(--cai-primary-color);
+  font-weight: 500;
+}
+
+/* Quiz and Certificate Links */
+.cai-course-quiz-nav,
+.cai-course-certificate-nav {
+  margin-top: 1.5rem;
+}
+
+/* Quiz and Certificate Navigation Buttons - Default custom styling */
+.cai-quiz-link:not(.wp-element-button),
+.cai-certificate-link:not(.wp-element-button) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: var(--cai-border-radius);
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: white !important;
+  text-decoration: none !important;
+  transition: all var(--cai-transition-fast);
+  box-shadow: var(--cai-shadow-sm);
+  font-weight: 500;
+  background-color: var(--cai-primary-color);
+}
+
+/* WordPress theme buttons - minimal essential layout only */
+.cai-quiz-link.wp-element-button,
+.cai-certificate-link.wp-element-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-decoration: none;
+  cursor: pointer;
+  /* All other styles come from WordPress theme classes */
+}
+
+/* Hover states only for custom styling (non-WordPress buttons) */
+.cai-quiz-link:not(.wp-element-button):hover,
+.cai-certificate-link:not(.wp-element-button):hover,
+.cai-quiz-link:not(.wp-element-button):focus,
+.cai-certificate-link:not(.wp-element-button):focus,
+.cai-quiz-link:not(.wp-element-button):active,
+.cai-certificate-link:not(.wp-element-button):active {
+  background-color: var(--cai-hover-color);
+  box-shadow: var(--cai-shadow);
+  color: white !important;
+  text-decoration: none !important;
+  outline: none;
+}
+
+/* No hover overrides needed for WordPress theme buttons - let theme handle it */
+
+.cai-quiz-icon,
+.cai-certificate-icon {
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Sidebar Controls */
+.cai-sidebar-controls {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--cai-border-color);
+}
+
+/* Sticky Toggle Button - Custom styling (when not using WordPress theme) */
+.cai-sticky-toggle:not(.wp-element-button) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background-color: var(--cai-background-light);
+  color: var(--cai-text-color);
+  border: 1px solid var(--cai-border-color);
+  border-radius: var(--cai-border-radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--cai-transition-fast);
+}
+
+.cai-sticky-toggle:not(.wp-element-button):hover {
+  background-color: var(--cai-primary-color);
+  color: white;
+  border-color: var(--cai-primary-color);
+}
+
+.cai-sticky-toggle:not(.wp-element-button).active {
+  background-color: var(--cai-primary-color);
+  color: white;
+  border-color: var(--cai-primary-color);
+}
+
+.cai-sticky-toggle:not(.wp-element-button).active:hover {
+  background-color: var(--cai-hover-color);
+  border-color: var(--cai-hover-color);
+}
+
+/* Sticky Toggle Button - WordPress theme styling with compact size */
+.cai-sticky-toggle.wp-element-button {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  width: 100% !important;
+  padding: 0.5rem 0.75rem !important;
+  font-size: 0.875rem !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  /* Colors come from WordPress theme via button-secondary class */
+}
+
+/* Active state for WordPress theme sticky button */
+.cai-sticky-toggle.wp-element-button.active {
+  /* Use WordPress primary color for active state */
+  background-color: var(--wp--preset--color--primary, var(--wp--custom--button--background-color, #0073aa)) !important;
+  color: var(--wp--preset--color--background, var(--wp--custom--button--text-color, #ffffff)) !important;
+  border-color: var(--wp--preset--color--primary, var(--wp--custom--button--border-color, #0073aa)) !important;
+}
+
+.cai-sticky-icon {
+  font-size: 0.875rem;
+  transition: transform var(--cai-transition-fast);
+}
+
+.cai-sticky-toggle.active .cai-sticky-icon {
+  transform: rotate(45deg);
+}
+
+/* ===== Main Content Area ===== */
+.cai-course-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ===== Chapter Styling ===== */
+.cai-chapter {
+  margin-bottom: calc(var(--cai-section-spacing) * 2);
+  scroll-margin-top: 50px;
+}
+
+body:not(.cai-theme-styling-active) .cai-chapter-heading {
+  font-family: var(--cai-heading-font);
+}
+
+.cai-chapter-heading {
+  font-size: var(--cai-subheading-font-size);
+  color: var(--cai-text-dark);
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--cai-border-color);
+  font-weight: 700;
+  position: relative;
+}
+
+.cai-chapter-heading::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4rem;
+  height: 3px;
+  background-color: var(--cai-primary-color);
+  border-radius: 1rem;
+}
+
+/* Chapter intro typography - only when custom styling is active */
+body:not(.cai-theme-styling-active) .cai-chapter-intro {
+  font-size: 1.125rem;
+  color: var(--cai-text-light);
+}
+
+.cai-chapter-intro {
+  margin-bottom: 2rem;
+  padding: 0 0.5rem;
+}
+
+/* ===== Section Styling ===== */
+.cai-section {
+  margin-bottom: var(--cai-section-spacing);
+  padding: 2rem;
+  background-color: var(--cai-background-color);
+  border: 1px solid var(--cai-border-color);
+  border-radius: var(--cai-border-radius);
+  scroll-margin-top: 50px;
+  transition: all var(--cai-transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.cai-section:hover {
+  border-color: var(--cai-primary-color);
+  box-shadow: var(--cai-shadow);
+}
+
+.cai-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background-color: var(--cai-primary-color);
+  transform: scaleY(0);
+  transition: transform var(--cai-transition-fast);
+  transform-origin: bottom;
+}
+
+.cai-section:hover::before {
+  transform: scaleY(1);
+}
+
+.cai-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+body:not(.cai-theme-styling-active) .cai-section-heading {
+  font-family: var(--cai-heading-font);
+}
+
+.cai-section-heading {
+  font-size: calc(var(--cai-subheading-font-size) - 0.25rem);
+  color: var(--cai-text-dark);
+  margin: 0;
+  font-weight: 600;
+  position: relative;
+  padding-left: 1rem;
+}
+
+.cai-section-heading::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 60%;
+  background-color: var(--cai-primary-color);
+  border-radius: var(--cai-border-radius);
+}
+
+.cai-section-completion {
+  flex-shrink: 0;
+}
+
+/* Mark Complete Button - Only when custom styling is active */
+body:not(.cai-theme-styling-active) .cai-mark-complete:not(.wp-element-button) {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--cai-background-light);
+  border: 1px solid var(--cai-border-color);
+  color: var(--cai-text-color);
+  border-radius: var(--cai-border-radius);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color var(--cai-transition-fast);
+  text-decoration: none;
+  min-width: 140px;
+  justify-content: center;
+}
+
+body:not(.cai-theme-styling-active) .cai-mark-complete:not(.wp-element-button):hover {
+  background-color: var(--cai-primary-color);
+  color: white;
+  border-color: var(--cai-primary-color);
+}
+
+body:not(.cai-theme-styling-active) .cai-mark-complete.cai-completed:not(.wp-element-button) {
+  background-color: var(--cai-primary-color);
+  color: white;
+  border-color: var(--cai-primary-color);
+}
+
+body:not(.cai-theme-styling-active) .cai-mark-complete.cai-completed:not(.wp-element-button):hover {
+  background-color: var(--cai-hover-color);
+  border-color: var(--cai-hover-color);
+}
+
+/* WordPress theme styling for mark complete button */
+body.cai-theme-styling-active .cai-mark-complete.wp-element-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  min-width: 140px !important;
+  justify-content: center !important;
+}
+
+.cai-complete-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+}
+
+.cai-complete-icon::before {
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  content: '\f096';
+}
+
+.cai-completed .cai-complete-icon::before {
+  content: '\f14a';
+}
+
+/* ===== Section Content Styling ===== */
+.cai-section-content {
+  line-height: 1.7;
+}
+
+/* Section content h4 typography - only when custom styling is active */
+body:not(.cai-theme-styling-active) .cai-section-content h4 {
+  font-family: var(--cai-heading-font);
+  font-size: 1.25rem;
+  color: var(--cai-primary-color);
+  font-weight: 600;
+}
+
+.cai-section-content h4 {
+  margin-top: 1.75rem;
+  margin-bottom: 1rem;
+}
+
+.cai-section-content p {
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+}
+
+.cai-section-content ul,
+.cai-section-content ol {
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  padding-left: 1.5rem;
+}
+
+.cai-section-content li {
+  margin-bottom: 0.5rem;
+}
+
+.cai-section-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--cai-border-radius);
+  display: block;
+  margin: 1.5rem auto;
+  box-shadow: var(--cai-shadow);
+  transition: transform var(--cai-transition-fast), box-shadow var(--cai-transition-fast);
+}
+
+.cai-section-content img:hover {
+  transform: scale(1.01);
+  box-shadow: var(--cai-shadow-md);
+}
+
+.cai-section-content a {
+  color: var(--cai-primary-color);
+  transition: color var(--cai-transition-fast);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.cai-section-content a:hover {
+  color: var(--cai-hover-color);
+  text-decoration-color: currentColor;
+}
+
+.cai-section-content blockquote {
+  margin: 1.5rem 0;
+  padding: 1.25rem 1.5rem;
+  background-color: var(--cai-primary-subtle);
+  border-left: 4px solid var(--cai-primary-color);
+  font-style: italic;
+  border-radius: 0 var(--cai-border-radius) var(--cai-border-radius) 0;
+  color: var(--cai-text-dark);
+}
+
+.cai-section-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  border-radius: var(--cai-border-radius);
+  overflow: hidden;
+  box-shadow: var(--cai-shadow-sm);
+}
+
+.cai-section-content th,
+.cai-section-content td {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--cai-border-color);
+  text-align: left;
+}
+
+.cai-section-content th {
+  background-color: var(--cai-background-light);
+  font-weight: 600;
+  color: var(--cai-primary-color);
+}
+
+.cai-section-content tr:nth-child(even) {
+  background-color: var(--cai-background-light);
+}
+
+.cai-section-main-image {
+  margin: 1.5rem 0;
+  border-radius: var(--cai-border-radius);
+  overflow: hidden;
+  background-color: var(--cai-background-light);
+  box-shadow: var(--cai-shadow);
+}
+
+.cai-section-main-image img {
+  width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  display: block;
+  margin: 0;
+  box-shadow: none;
+}
+
+.cai-section-main-image figcaption {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: var(--cai-text-light);
+  border-top: 1px solid var(--cai-border-color);
+  background-color: var(--cai-background-light);
+  text-align: center;
+}
+
+/* ===== Quiz Styling ===== */
+.cai-course-quiz {
+  margin-bottom: var(--cai-section-spacing);
+  padding: 2rem;
+  background-color: var(--cai-background-light);
+  border-radius: var(--cai-border-radius);
+  box-shadow: var(--cai-shadow);
+  scroll-margin-top: 50px;
+  border: 1px solid var(--cai-border-color);
+}
+
+body:not(.cai-theme-styling-active) .cai-quiz-heading {
+  font-family: var(--cai-heading-font);
+}
+
+.cai-quiz-heading {
+  font-size: var(--cai-subheading-font-size);
+  color: var(--cai-text-dark);
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  position: relative;
+  padding-bottom: 1rem;
+}
+
+.cai-quiz-heading::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4rem;
+  height: 3px;
+  background-color: var(--cai-primary-color);
+  border-radius: 1rem;
+}
+
+.cai-quiz-description {
+  margin-bottom: 2rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+  color: var(--cai-text-light);
+  font-size: 1.125rem;
+}
+
+.cai-quiz-questions {
+  margin-bottom: 2rem;
+}
+
+.cai-quiz-question {
+  margin-bottom: 1.5rem;
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: var(--cai-border-radius);
+  box-shadow: var(--cai-shadow);
+  transition: transform var(--cai-transition-fast), box-shadow var(--cai-transition-fast);
+  border: 1px solid var(--cai-border-color);
+}
+
+.cai-quiz-question:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--cai-shadow-md);
+}
+
+body:not(.cai-theme-styling-active) .cai-question-text {
+  font-family: var(--cai-heading-font);
+}
+
+.cai-question-text {
+  font-size: 1.125rem;
+  color: var(--cai-text-dark);
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  font-weight: 600;
+}
+
+.cai-question-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cai-question-option {
+  position: relative;
+}
+
+.cai-question-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+}
+
+.cai-question-option label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background-color: var(--cai-background-light);
+  border-radius: var(--cai-border-radius);
+  cursor: pointer;
+  transition: all var(--cai-transition-fast);
+  border: 1px solid var(--cai-border-color);
+}
+
+.cai-question-option label:hover {
+  background-color: var(--cai-primary-subtle);
+  transform: translateY(-2px);
+  box-shadow: var(--cai-shadow);
+  border-color: var(--cai-primary-color);
+}
+
+.cai-question-option label::before {
+  content: '';
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--cai-primary-color);
+  border-radius: 50%;
+  background-color: white;
+  flex-shrink: 0;
+  transition: all var(--cai-transition-fast);
+  margin-top: 0.125rem;
+}
+
+.cai-question-option input[type="radio"]:checked + label {
+  background-color: var(--cai-primary-subtle);
+  border-color: var(--cai-primary-color);
+  box-shadow: var(--cai-shadow);
+}
+
+.cai-question-option input[type="radio"]:checked + label::before {
+  background-color: var(--cai-primary-color);
+  box-shadow: inset 0 0 0 3px white;
+}
+
+.cai-question-option input[type="radio"]:focus + label {
+  outline: 2px solid var(--cai-primary-color);
+  outline-offset: 2px;
+}
+
+.cai-option-image {
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+  width: 100%;
+  max-width: 300px;
+  max-height: 200px;
+  overflow: hidden;
+  border-radius: var(--cai-border-radius);
+  box-shadow: var(--cai-shadow-sm);
+  transition: transform var(--cai-transition-fast), box-shadow var(--cai-transition-fast);
+}
+
+.cai-option-image:hover {
+  transform: scale(1.02);
+  box-shadow: var(--cai-shadow);
+}
+
+.cai-option-image img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  display: block;
+}
+
+/* Image Choice Question */
+.cai-question-image-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.cai-image-option {
+  position: relative;
+}
+
+.cai-image-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+}
+
+.cai-image-option label {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--cai-border-radius);
+  overflow: hidden;
+  background-color: white;
+  cursor: pointer;
+  box-shadow: var(--cai-shadow);
+  transition: all var(--cai-transition-fast);
+  border: 2px solid transparent;
+  padding: 0;
+}
+
+.cai-image-option label:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--cai-shadow-md);
+  border-color: var(--cai-primary-color);
+}
+
+.cai-image-option input[type="radio"]:checked + label {
+  border-color: var(--cai-primary-color);
+  box-shadow: 0 0 0 2px var(--cai-primary-color), var(--cai-shadow-md);
+}
+
+.cai-image-option input[type="radio"]:focus + label {
+  outline: 2px solid var(--cai-primary-color);
+  outline-offset: 2px;
+}
+
+.cai-image-option .cai-option-image {
+  width: 100%;
+  height: 170px;
+  margin: 0;
+  max-width: none;
+  max-height: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.cai-image-option .cai-option-image:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.cai-image-option .cai-option-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cai-image-option-text {
+  padding: 0.75rem;
+  text-align: center;
+  background-color: var(--cai-background-light);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  border-top: 1px solid var(--cai-border-color);
+}
+
+/* Question Feedback */
+.cai-question-feedback {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: var(--cai-border-radius);
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cai-feedback-correct,
+.cai-feedback-incorrect {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--cai-border-radius);
+}
+
+.cai-feedback-correct {
+  color: var(--cai-success-color);
+  background-color: rgba(var(--cai-success-color-rgb), 0.1);
+  border: 1px solid rgba(var(--cai-success-color-rgb), 0.2);
+}
+
+.cai-feedback-incorrect {
+  color: var(--cai-primary-color);
+  background-color: color-mix(in srgb, var(--cai-primary-color) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cai-primary-color) 20%, transparent);
+}
+
+.cai-feedback-icon {
+  font-size: 1rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.cai-feedback-correct .cai-feedback-icon::before {
+  content: '\f00c';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+}
+
+.cai-feedback-incorrect .cai-feedback-icon::before {
+  content: '\f00d';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+}
+
+.cai-correct-answer {
+  display: block;
+  margin-top: 0.5rem;
+  margin-left: 2.25rem;
+  font-weight: 500;
+  color: var(--cai-text-dark);
+}
+
+/* Quiz Results */
+.cai-quiz-results {
+  margin-top: 2rem;
+  padding: 2rem;
+  background-color: white;
+  border-radius: var(--cai-border-radius);
+  box-shadow: var(--cai-shadow);
+  border: 1px solid var(--cai-border-color);
+  animation: slideUp 0.5s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+body:not(.cai-theme-styling-active) .cai-results-heading {
+  font-family: var(--cai-heading-font);
+}
+
+.cai-results-heading {
+  font-size: 1.5rem;
+  color: var(--cai-text-dark);
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.cai-results-summary {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.cai-results-score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.cai-score-label {
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: var(--cai-primary-color);
+}
+
+.cai-score-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--cai-primary-color);
+  animation: pulse 1.5s ease infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.cai-results-message {
+  font-size: 1.125rem;
+  line-height: 1.5;
+  color: var(--cai-text-color);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.cai-results-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Retry Quiz and Get Certificate buttons - Only when custom styling is active */
+body:not(.cai-theme-styling-active) .cai-retry-quiz:not(.wp-element-button),
+body:not(.cai-theme-styling-active) .cai-get-certificate:not(.wp-element-button) {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--cai-border-radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--cai-transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: var(--cai-shadow);
+}
+
+/* WordPress theme styling for these buttons */
+body.cai-theme-styling-active .cai-retry-quiz.wp-element-button,
+body.cai-theme-styling-active .cai-get-certificate.wp-element-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  cursor: pointer !important;
+}
+
+/* Retry Quiz specific styles - Only when custom styling is active */
+body:not(.cai-theme-styling-active) .cai-retry-quiz:not(.wp-element-button) {
+  background-color: var(--cai-background-dark);
+  color: var(--cai-text-color);
+}
+
+body:not(.cai-theme-styling-active) .cai-retry-quiz:not(.wp-element-button):hover {
+  background-color: var(--cai-primary-color);
+  color: white;
+  box-shadow: var(--cai-shadow-md);
+}
+
+/* Get Certificate Button - Only when custom styling is active */
+body:not(.cai-theme-styling-active) .cai-get-certificate:not(.wp-element-button) {
+  background-color: var(--cai-primary-color);
+  color: white;
+}
+
+body:not(.cai-theme-styling-active) .cai-get-certificate:not(.wp-element-button):hover {
+  background-color: var(--cai-hover-color);
+  box-shadow: var(--cai-shadow-md);
+}
+
+body:not(.cai-theme-styling-active) .cai-get-certificate:not(.wp-element-button):disabled {
+  background-color: var(--cai-border-color);
+  color: var(--cai-text-light);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* WordPress theme styling for get certificate button */
+body.cai-theme-styling-active .cai-get-certificate.wp-element-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+}
+
+body.cai-theme-styling-active .cai-get-certificate.wp-element-button:disabled {
+  cursor: not-allowed !important;
+}
+
+/* Quiz Submit Button - Only when custom styling is active */
+body:not(.cai-theme-styling-active) .cai-quiz-submit:not(.wp-element-button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--cai-primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--cai-border-radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--cai-transition-fast);
+  box-shadow: var(--cai-shadow);
+}
+
+body:not(.cai-theme-styling-active) .cai-quiz-submit:not(.wp-element-button):hover {
+  background-color: var(--cai-hover-color);
+  box-shadow: var(--cai-shadow-md);
+}
+
+/* WordPress theme styling for quiz submit button */
+body.cai-theme-styling-active .cai-quiz-submit.wp-element-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  cursor: pointer !important;
+}
+
+.cai-quiz-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+/* ===== Certificate Section ===== */
+.cai-certificate-section {
+  margin-bottom: var(--cai-section-spacing);
+  padding: 2.5rem;
+  background-color: var(--cai-background-light);
+  border-radius: var(--cai-border-radius);
+  text-align: center;
+  scroll-margin-top: 50px;
+  box-shadow: var(--cai-shadow-md);
+  border: 1px solid var(--cai-border-color);
+}
+
+body:not(.cai-theme-styling-active) .cai-certificate-heading {
+  font-family: var(--cai-heading-font);
+}
+
+.cai-certificate-heading {
+  font-size: var(--cai-subheading-font-size);
+  color: var(--cai-text-dark);
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+  position: relative;
+  padding-bottom: 1rem;
+}
+
+.cai-certificate-heading::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4rem;
+  height: 3px;
+  background-color: var(--cai-accent-color);
+  border-radius: 1rem;
+}
+
+.cai-certificate-info {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.cai-certificate-info p {
+  font-size: 1.125rem;
+  color: var(--cai-text-color);
+}
+
+.cai-certificate-ready {
+  margin-top: 2rem;
+  background-color: white;
+  padding: 2rem;
+  border-radius: var(--cai-border-radius);
+  box-shadow: var(--cai-shadow);
+  border: 1px solid var(--cai-border-color);
+  animation: pulsate 2s infinite alternate;
+}
+
+@keyframes pulsate {
+  from {
+    box-shadow: var(--cai-shadow);
+  }
+  to {
+    box-shadow: 0 0 15px color-mix(in srgb, var(--cai-primary-color) 30%, transparent), var(--cai-shadow);
+  }
+}
+
+.cai-certificate-ready p {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--cai-text-dark);
+  margin-bottom: 1.5rem;
+}
+
+.cai-view-certificate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.75rem;
+  background-color: var(--cai-primary-color);
+  color: white !important;
+  text-decoration: none !important;
+  border-radius: var(--cai-border-radius);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  box-shadow: var(--cai-shadow);
+  transition: all var(--cai-transition-fast);
+}
+
+.cai-view-certificate-btn:hover,
+.cai-view-certificate-btn:focus,
+.cai-view-certificate-btn:active {
+  background-color: var(--cai-hover-color);
+  box-shadow: var(--cai-shadow-md);
+  color: white !important;
+  text-decoration: none !important;
+}
+
+.cai-view-certificate-btn:active {
+  transform: translateY(-1px);
+}
+
+.cai-certificate-progress {
+  margin-top: 2rem;
+}
+
+.cai-certificate-progress p {
+  font-size: 1.125rem;
+  color: var(--cai-text-color);
+  margin-bottom: 1rem;
+}
+
+/* ===== Certificate Styles ===== */
+.certificate-container {
+  max-width: 1000px;
+  margin: 2rem auto;
+  text-align: center;
+}
+
+.certificate {
+  width: 100%;
+  background-color: white;
+  border: 5px solid var(--cai-primary-color);
+  padding: 3rem;
+  box-sizing: border-box;
+  position: relative;
+  box-shadow: var(--cai-shadow-lg);
+  border-radius: var(--cai-border-radius);
+}
+
+.certificate-inner {
+  padding: 2rem;
+  border: 1px solid var(--cai-border-color);
+  background-color: color-mix(in srgb, var(--cai-background-color) 90%, transparent);
+  position: relative;
+}
+
+.certificate-inner::before,
+.certificate-inner::after {
+  content: '';
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 50l-12.5 -12.5 -12.5 12.5 12.5 12.5z M50 25l-12.5 -12.5 -12.5 12.5 12.5 12.5z M75 25l-12.5 -12.5 -12.5 12.5 12.5 12.5z M75 50l-12.5 -12.5 -12.5 12.5 12.5 12.5z M50 75l-12.5 -12.5 -12.5 12.5 12.5 12.5z M75 75l-12.5 -12.5 -12.5 12.5 12.5 12.5z' fill='%234361ee' fill-opacity='0.1'/%3E%3C/svg%3E");
+  opacity: 0.3;
+}
+
+.certificate-inner::before {
+  top: 1rem;
+  left: 1rem;
+}
+
+.certificate-inner::after {
+  bottom: 1rem;
+  right: 1rem;
+  transform: rotate(180deg);
+}
+
+.certificate-title {
+  font-size: 2.5rem;
+  color: var(--cai-primary-color);
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  letter-spacing: 2px;
+  font-weight: 700;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.1);
+}
+
+.certificate-recipient {
+  font-size: 2.25rem;
+  font-weight: bold;
+  color: var(--cai-text-dark);
+  margin: 2rem 0;
+  font-family: "Times New Roman", Times, serif;
+  border-bottom: 1px solid var(--cai-border-color);
+  display: inline-block;
+  padding-bottom: 0.5rem;
+  position: relative;
+}
+
+.certificate-recipient::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50%;
+  height: 3px;
+  background-color: var(--cai-primary-color);
+  border-radius: 1rem;
+}
+
+.certificate-course {
+  font-size: 1.75rem;
+  color: var(--cai-primary-color);
+  margin: 1.5rem 0;
+  font-weight: 600;
+}
+
+.certificate-controls {
+  margin: 2rem 0;
+}
+
+.download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.75rem;
+  background-color: var(--cai-primary-color);
+  color: white;
+  text-decoration: none;
+  border-radius: var(--cai-border-radius);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  box-shadow: var(--cai-shadow);
+  transition: all var(--cai-transition-fast);
+}
+
+.download-btn:hover {
+  background-color: var(--cai-hover-color);
+  box-shadow: var(--cai-shadow-md);
+}
+
+.download-btn:active {
+  transform: translateY(-1px);
+}
+
+/* ===== Course List Styles ===== */
+.cai-courses-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.cai-course-card {
+  background-color: white;
+  border-radius: var(--cai-border-radius);
+  overflow: hidden;
+  transition: all var(--cai-transition-fast);
+  border: 1px solid var(--cai-border-color);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+}
+
+.cai-course-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--cai-shadow-lg);
+  border-color: var(--cai-primary-color);
+}
+
+.cai-course-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: var(--cai-primary-color);
+  transform: scaleX(0);
+  transition: transform var(--cai-transition-fast);
+  transform-origin: left;
+}
+
+.cai-course-card:hover::after {
+  transform: scaleX(1);
+}
+
+.cai-course-card-image {
+  height: 200px;
+  overflow: hidden;
+  position: relative;
+}
+
+.cai-course-card-image::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.3));
+  opacity: 0;
+  transition: opacity var(--cai-transition-fast);
+}
+
+.cai-course-card:hover .cai-course-card-image::after {
+  opacity: 1;
+}
+
+.cai-course-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--cai-transition-fast);
+}
+
+.cai-course-card:hover .cai-course-card-image img {
+  transform: scale(1.05);
+}
+
+.cai-course-card-content {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+body:not(.cai-theme-styling-active) .cai-course-card-title {
+  font-family: var(--cai-heading-font);
+}
+
+.cai-course-card-title {
+  font-size: 1.25rem;
+  color: var(--cai-text-dark);
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.cai-course-card-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+  color: var(--cai-text-light);
+}
+
+.cai-course-card-difficulty,
+.cai-course-card-time {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  background-color: var(--cai-background-light);
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--cai-border-radius);
+  font-weight: 500;
+  font-size: 0.75rem;
+  color: var(--cai-text-light);
+}
+
+.cai-difficulty-icon,
+.cai-time-icon {
+  font-size: 0.75rem;
+}
+
+.cai-course-card-description {
+  margin-bottom: 1.5rem;
+  font-size: 0.9375rem;
+  color: var(--cai-text-color);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex-grow: 1;
+}
+
+.cai-course-card-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--cai-primary-color);
+  color: white !important;
+  text-decoration: none !important;
+  border-radius: var(--cai-border-radius);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  transition: all var(--cai-transition-fast);
+  box-shadow: var(--cai-shadow-sm);
+  align-self: flex-start;
+}
+
+.cai-course-card-link:hover,
+.cai-course-card-link:focus,
+.cai-course-card-link:active {
+  background-color: var(--cai-hover-color);
+  box-shadow: var(--cai-shadow);
+  color: white !important;
+  text-decoration: none !important;
+}
+
+.cai-course-card-link::after {
+  content: '→';
+  font-size: 1.125rem;
+  transition: transform var(--cai-transition-fast);
+}
+
+.cai-course-card-link:hover::after {
+  transform: translateX(3px);
+}
+
+/* ===== Layout Integration Styles ===== */
+.cai-no-sidebar .site-content {
+  display: block !important;
+}
+
+.cai-no-sidebar .content-area {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  float: none !important;
+}
+
+.cai-no-sidebar .site-main {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.cai-no-sidebar .widget-area,
+.cai-no-sidebar .sidebar {
+  display: none !important;
+}
+
+.cai-full-width-content .site-content .content-area,
+.cai-full-width-content .site-content .cai-course-container {
+  max-width: 100% !important;
+  width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.cai-contained-content .site-content .content-area,
+.cai-contained-content .site-content .cai-course-container {
+  max-width: 1200px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 2rem !important;
+  padding-right: 2rem !important;
+}
+
+/* ===== Responsive Styles ===== */
+@media (max-width: 992px) {
+  :root {
+    --cai-heading-font-size: 1.75rem;
+    --cai-subheading-font-size: 1.375rem;
+  }
+
+  .cai-course-content-wrapper {
+    flex-direction: column;
+  }
+  
+  .cai-course-sidebar {
+    width: 100%;
+    order: 0;
+    position: relative;
+    top: 0;
+    margin-bottom: 2rem;
+  }
+  
+  .cai-course-nav-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+  }
+  
+  .cai-course-nav-title::after {
+    content: '\f078';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 0.75rem;
+    color: var(--cai-primary-color);
+    transition: transform var(--cai-transition-fast);
+  }
+  
+  .cai-course-nav-title.collapsed::after {
+    transform: rotate(-180deg);
+  }
+  
+  .cai-course-chapters {
+    display: none;
+    animation: slideDown 0.3s ease forwards;
+  }
+  
+  .cai-course-nav-title.expanded + .cai-course-chapters {
+    display: block;
+  }
+  
+  .cai-section-header {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .cai-course-header {
+    margin: 1.5rem auto;
+  }
+  
+  .cai-course-header-content {
+    flex-direction: column;
+  }
+  
+  .cai-course-thumbnail {
+    width: 100%;
+    height: 200px;
+  }
+  
+  .cai-course-meta {
+    justify-content: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+  }
+  
+  .cai-course-header-main {
+    padding: 1.25rem;
+  }
+  
+  .cai-course-details {
+    grid-template-columns: 1fr;
+  }
+  
+  .cai-course-audience {
+    border-right: none;
+    border-bottom: 1px solid var(--cai-border-color);
+  }
+  
+  .cai-course-title {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --cai-content-padding: 1.25rem;
+    --cai-section-spacing: 1.5rem;
+  }
+  
+  .cai-course-meta {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  
+  .cai-course-header {
+    margin: 1.25rem auto;
+  }
+  
+  .cai-course-thumbnail {
+    height: 180px;
+  }
+  
+  .cai-course-meta {
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+  
+  .cai-course-time,
+  .cai-course-difficulty,
+  .cai-course-progress {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+  }
+  
+  .cai-course-progress {
+    min-width: 90px;
+  }
+  
+  .cai-course-progress .cai-progress-bar {
+    width: 75px;
+    min-width: 75px;
+  }
+  
+  .cai-course-header-main {
+    padding: 1rem;
+  }
+  
+  .cai-course-title {
+    font-size: 1.375rem;
+  }
+  
+  .cai-course-description {
+    -webkit-line-clamp: 2;
+  }
+  
+  .cai-course-audience,
+  .cai-course-objectives {
+    padding: 1rem 1.25rem;
+  }
+  
+  .cai-quiz-submit {
+    width: 100%;
+  }
+  
+  .cai-results-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .cai-retry-quiz,
+  .cai-get-certificate {
+    width: 100%;
+  }
+  
+  .cai-question-image-options {
+    grid-template-columns: 1fr;
+  }
+  
+  .cai-courses-list {
+    grid-template-columns: 1fr;
+  }
+  
+  .certificate {
+    padding: 1.5rem;
+  }
+  
+  .certificate-inner {
+    padding: 1rem;
+  }
+  
+  .certificate-title {
+    font-size: 1.75rem;
+  }
+  
+  .certificate-recipient {
+    font-size: 1.5rem;
+  }
+  
+  .certificate-course {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --cai-content-padding: 1rem;
+    --cai-section-spacing: 1.25rem;
+    --cai-base-font-size: 15px;
+    --cai-heading-font-size: 1.5rem;
+    --cai-subheading-font-size: 1.25rem;
+  }
+  
+  .cai-course-container {
+    padding: 0 var(--cai-content-padding);
+  }
+  
+  .cai-course-header {
+    padding: 1rem 0;
+    margin: 1rem auto;
+  }
+  
+  .cai-course-thumbnail {
+    height: 160px;
+  }
+  
+  .cai-course-meta {
+    gap: 0.375rem;
+    margin-top: 0.5rem;
+  }
+  
+  .cai-course-time,
+  .cai-course-difficulty,
+  .cai-course-progress {
+    font-size: 0.6875rem;
+    padding: 0.25rem 0.625rem;
+  }
+  
+  .cai-course-progress {
+    min-width: 80px;
+  }
+  
+  .cai-course-progress .cai-progress-bar {
+    width: 65px;
+    min-width: 65px;
+  }
+  
+  .cai-course-header-main {
+    padding: 0.875rem;
+  }
+  
+  .cai-course-title {
+    font-size: 1.25rem;
+  }
+  
+  .cai-course-description {
+    font-size: 0.8125rem;
+    -webkit-line-clamp: 2;
+  }
+  
+  .cai-course-audience,
+  .cai-course-objectives {
+    padding: 0.875rem 1rem;
+  }
+  
+  /* Course audience/objectives h3 typography - only when custom styling is active */
+  body:not(.cai-theme-styling-active) .cai-course-audience h3,
+  body:not(.cai-theme-styling-active) .cai-course-objectives h3 {
+    font-size: 0.9375rem;
+  }
+  
+  .cai-course-audience p,
+  .cai-course-objectives-content {
+    font-size: 0.8125rem;
+  }
+  
+  .cai-section {
+    padding: 1.25rem;
+  }
+  
+  .cai-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .cai-certificate-section,
+  .cai-course-quiz {
+    padding: 1.5rem;
+  }
+  
+  .cai-certificate-ready {
+    padding: 1.25rem;
+  }
+  
+  .cai-view-certificate-btn,
+  .download-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Print styles for certificate */
+@media print {
+  body {
+    background: none;
+  }
+  
+  .certificate-container {
+    margin: 0;
+  }
+  
+  .certificate {
+    border: none;
+    box-shadow: none;
+  }
+  
+  .certificate-controls {
+    display: none;
+  }
+}
+
+/* ===================================
+   SCROLL PROGRESS BAR
+   =================================== */
+
+.cai-scroll-progress-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background-color: var(--cai-background-light);
+  z-index: 1000;
+  transition: opacity 0.3s ease;
+}
+
+.cai-scroll-progress-fill {
+  height: 100%;
+  width: 0%;
+  background-color: var(--cai-primary-color);
+  background: linear-gradient(90deg, 
+    var(--cai-primary-color) 0%, 
+    var(--cai-primary-light) 50%, 
+    var(--cai-primary-color) 100%);
+  transition: width 0.1s ease-out;
+  box-shadow: 0 0 3px rgba(var(--cai-primary-color-rgb, 185, 28, 28), 0.3);
+}
+
+/* Hide progress bar when at top of page */
+.cai-scroll-progress-bar.cai-hidden {
+  opacity: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .cai-scroll-progress-bar {
+    height: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cai-scroll-progress-fill {
+    transition: none;
+  }
+}
