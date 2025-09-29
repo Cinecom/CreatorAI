@@ -119,11 +119,55 @@ class Creator_AI_GitHub_Updater {
     
     public function after_install($response, $hook_extra, $result) {
         global $wp_filesystem;
-        
+
+        // Check if we're updating this specific plugin
+        if (!isset($hook_extra['plugin']) || $hook_extra['plugin'] !== $this->plugin_basename) {
+            return $result;
+        }
+
         $install_directory = plugin_dir_path($this->plugin_file);
-        $wp_filesystem->move($result['destination'], $install_directory);
-        $result['destination'] = $install_directory;
-        
+        $temp_directory = $result['destination'];
+
+        // GitHub zip files are extracted with format {repo-name}-{branch}
+        // but we need the plugin to be in the correct folder name
+        $expected_folder_name = dirname($this->plugin_basename);
+
+        // Find the actual extracted folder (could be CreatorAI-main, CreatorAI-master, etc.)
+        $extracted_folders = $wp_filesystem->dirlist($result['destination_dir']);
+        $source_folder = null;
+
+        foreach ($extracted_folders as $folder_name => $folder_info) {
+            if ($folder_info['type'] === 'd' && (
+                strpos($folder_name, $this->github_repo) === 0 ||
+                strpos(strtolower($folder_name), strtolower($expected_folder_name)) !== false
+            )) {
+                $source_folder = $result['destination_dir'] . '/' . $folder_name;
+                break;
+            }
+        }
+
+        // If we found the extracted folder, move its contents to the correct plugin directory
+        if ($source_folder && $wp_filesystem->exists($source_folder)) {
+            // Remove the old plugin directory if it exists
+            if ($wp_filesystem->exists($install_directory)) {
+                $wp_filesystem->delete($install_directory, true);
+            }
+
+            // Move the extracted folder to the correct plugin directory name
+            $wp_filesystem->move($source_folder, $install_directory);
+
+            // Clean up any remaining extraction directory
+            if ($wp_filesystem->exists($result['destination_dir'])) {
+                $wp_filesystem->delete($result['destination_dir'], true);
+            }
+
+            $result['destination'] = $install_directory;
+        } else {
+            // Fallback to original behavior if we can't find the extracted folder
+            $wp_filesystem->move($temp_directory, $install_directory);
+            $result['destination'] = $install_directory;
+        }
+
         if ($this->plugin_data['TextDomain']) {
             $locale = apply_filters('theme_locale', get_locale(), $this->plugin_data['TextDomain']);
             load_textdomain($this->plugin_data['TextDomain'], $install_directory . '/languages/' . $this->plugin_data['TextDomain'] . '-' . $locale . '.mo');
