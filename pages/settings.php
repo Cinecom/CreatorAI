@@ -39,10 +39,17 @@
                             <tr>
                                 <th scope="row">OpenAI API Key</th>
                                 <td>
+                                    <?php if (!Creator_AI::can_access_credentials()): ?>
+                                        <p class="description" style="color: #d63638; font-weight: bold;">⚠️ Insufficient permissions to view or modify API credentials.</p>
+                                    <?php else: ?>
                                     <div class="cai-input-group">
-                                        <input type="text" name="cai_openai_api_key" value="<?php echo esc_attr(get_option('cai_openai_api_key')); ?>" class="regular-text" />
                                         <?php 
-                                            $api_key = get_option('cai_openai_api_key');
+                                            $api_key = Creator_AI::get_credential('cai_openai_api_key');
+                                            $masked_key = !empty($api_key) ? Creator_AI::mask_credential($api_key) : '';
+                                        ?>
+                                        <input type="password" name="cai_openai_api_key" value="<?php echo esc_attr($api_key); ?>" class="regular-text" placeholder="<?php echo esc_attr($masked_key); ?>" autocomplete="new-password" />
+                                        <button type="button" class="button cai-toggle-credential" data-target="cai_openai_api_key">👁️</button>
+                                        <?php 
                                             if(empty($api_key)){
                                                 echo '<button type="button" id="test-openai-connection" class="button" disabled>Test Connection</button>';
                                             } else {
@@ -51,6 +58,10 @@
                                         ?>
                                     </div>
                                     <p class="description">Sign up at the <a href="https://platform.openai.com/" target="_blank">OpenAI Platform</a> and create a new API key. You can check your <a href="https://platform.openai.com/settings/organization/usage" target="_blank">usage cost here</a>.</p>
+                                    <?php if (!empty($api_key)): ?>
+                                        <p class="description" style="color: #46b450;">🔒 <strong>Encrypted:</strong> Your API key is securely encrypted in the database.</p>
+                                    <?php endif; ?>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                             <tr>
@@ -96,8 +107,22 @@
                             <tr>
                                 <th scope="row">Google OAuth Client Secret</th>
                                 <td>
-                                    <input type="text" name="cai_google_client_secret" value="<?php echo esc_attr(get_option('cai_google_client_secret')); ?>" class="regular-text" />
-                                    <p class="description">This is provided alongside your Client ID.</p>
+                                    <?php if (!Creator_AI::can_access_credentials()): ?>
+                                        <p class="description" style="color: #d63638; font-weight: bold;">⚠️ Insufficient permissions to view or modify API credentials.</p>
+                                    <?php else: ?>
+                                        <?php 
+                                            $client_secret = Creator_AI::get_credential('cai_google_client_secret');
+                                            $masked_secret = !empty($client_secret) ? Creator_AI::mask_credential($client_secret) : '';
+                                        ?>
+                                        <div class="cai-input-group">
+                                            <input type="password" name="cai_google_client_secret" value="<?php echo esc_attr($client_secret); ?>" class="regular-text" placeholder="<?php echo esc_attr($masked_secret); ?>" autocomplete="new-password" />
+                                            <button type="button" class="button cai-toggle-credential" data-target="cai_google_client_secret">👁️</button>
+                                        </div>
+                                        <p class="description">This is provided alongside your Client ID.</p>
+                                        <?php if (!empty($client_secret)): ?>
+                                            <p class="description" style="color: #46b450;">🔒 <strong>Encrypted:</strong> Your client secret is securely encrypted in the database.</p>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                             <tr>
@@ -106,7 +131,7 @@
                                     <div class="cai-input-group">
                                         <?php 
                                             $client_id     = get_option('cai_google_client_id');
-                                            $client_secret = get_option('cai_google_client_secret');
+                                            $client_secret = Creator_AI::get_credential('cai_google_client_secret');
                                             $access_token  = get_option('cai_google_access_token');
                                             if(empty($client_id) || empty($client_secret)){
                                                 echo '<p>Please fill in and save your OAuth Client ID and Secret above to enable Google connection.</p>';
@@ -156,27 +181,6 @@
                     </div>
                 </div>
 
-                <div class="cai-section box debug-settings">
-                    <div class="cai-section-header">
-                        <h3>Debug Settings</h3>
-                    </div>
-                    <div class="cai-section-content">
-                        <table class="form-table">
-                            <tr>
-                                <th scope="row">Enable Debugging</th>
-                                <td>
-                                    <div class="cai-input-group">
-                                        
-                                        <input type="checkbox" id="cai_debugging" name="cai_debug" <?php checked(get_option('cai_debug'), true); ?> class="regular-text" />
-                                        <label for="cai_debugging"  class="regular-text">Enable Debugging</label>
-                                    </div>
-                                    <p class="description">Shows API responses in a textfield for debugging.</p>
-                                </td>
-                            </tr>
-                            
-                        </table>
-                    </div>
-                </div>
 
 
             </div>

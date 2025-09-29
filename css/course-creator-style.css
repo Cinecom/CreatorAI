@@ -428,11 +428,40 @@
     font-weight: 600;
 }
 
-.cc-courses-actions button {
+.cc-courses-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cc-courses-actions button,
+.cc-courses-actions .cc-view-all-courses-btn {
     display: flex;
     align-items: center;
     gap: 5px;
     transition: all 0.2s ease;
+    text-decoration: none;
+    border-radius: var(--border-radius);
+}
+
+.cc-view-all-courses-btn {
+    background-color: var(--accent-color) !important;
+    border-color: var(--accent-color) !important;
+    color: var(--white-color) !important;
+    font-size: 13px;
+    padding: 4px 8px;
+}
+
+.cc-view-all-courses-btn:hover {
+    background-color: #0a9d5c !important;
+    border-color: #0a9d5c !important;
+    color: var(--white-color) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(13, 181, 108, 0.3);
+}
+
+.cc-view-all-courses-btn:focus {
+    box-shadow: 0 0 0 2px rgba(13, 181, 108, 0.2) !important;
 }
 
 .cc-courses-actions svg {

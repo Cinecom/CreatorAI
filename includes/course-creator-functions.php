@@ -749,7 +749,7 @@ trait Creator_AI_Course_Creator_Functions {
      */
     public static function analyze_image_content($image_path) {
         // Get API key
-        $api_key = get_option('cai_openai_api_key');
+        $api_key = Creator_AI::get_credential('cai_openai_api_key');
         
         // Check if API key exists
         if (empty($api_key) || !file_exists($image_path)) {
@@ -875,7 +875,7 @@ Be thorough in assessing whether this image would work well in a quiz context - 
         try {
         
         // Get API key and model
-        $api_key = get_option('cai_openai_api_key');
+        $api_key = Creator_AI::get_credential('cai_openai_api_key');
         $model = get_option('cai_openai_model', 'gpt-4o');
         
         error_log("API key exists: " . (!empty($api_key) ? 'Yes' : 'No'));
@@ -1727,7 +1727,7 @@ Be thorough in assessing whether this image would work well in a quiz context - 
      */
     public static function expand_chapter_introduction($chapter_title, $introduction, $course_title) {
         // Get OpenAI API key and model
-        $api_key = get_option('cai_openai_api_key');
+        $api_key = Creator_AI::get_credential('cai_openai_api_key');
         $model = get_option('cai_openai_model', 'gpt-4o');
         
         // Prepare the system message
@@ -1796,7 +1796,7 @@ Be thorough in assessing whether this image would work well in a quiz context - 
      */
     public function expand_section_content($chapter_title, $section_title, $content, $course_title, $image_info = null) {
         // Get OpenAI API key and model
-        $api_key = get_option('cai_openai_api_key');
+        $api_key = Creator_AI::get_credential('cai_openai_api_key');
         $model = get_option('cai_openai_model', 'gpt-4o');
         
         if (empty($api_key)) {
@@ -2011,7 +2011,7 @@ Be thorough in assessing whether this image would work well in a quiz context - 
     }
     public function optimize_course_metadata($course_data) {
         // Get API key and model
-        $api_key = get_option('cai_openai_api_key');
+        $api_key = Creator_AI::get_credential('cai_openai_api_key');
         $model = get_option('cai_openai_model', 'gpt-4o');
         
         if (empty($api_key)) {

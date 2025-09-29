@@ -3,7 +3,7 @@
 if (!defined('ABSPATH')) exit;
 
 // Get OpenAI API key status
-$api_key = get_option('cai_openai_api_key');
+$api_key = Creator_AI::get_credential('cai_openai_api_key');
 $has_api_key = !empty($api_key);
 ?>
 
@@ -31,8 +31,14 @@ $has_api_key = !empty($api_key);
                 <div class="cc-courses-header">
                     <h3><?php echo esc_html__('Your Courses', 'creator-ai'); ?></h3>
                     <div class="cc-courses-actions">
+                        <a href="<?php echo esc_url(admin_url('edit.php?post_type=cai_course')); ?>" class="button cc-view-all-courses-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16">
+                                <path d="M3 5h12v2H3zm0 4h12v2H3zm0 4h8v2H3zM21 5h-4v4h4zm0 6h-4v4h4z"/>
+                            </svg>
+                            <span><?php echo esc_html__('View All', 'creator-ai'); ?></span>
+                        </a>
                         <button class="button cc-refresh-courses-btn">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16">
                                 <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
                             </svg>
                             <span><?php echo esc_html__('Refresh', 'creator-ai'); ?></span>
@@ -270,9 +276,5 @@ $has_api_key = !empty($api_key);
             </div>
         </div>
         
-        <!-- Debug Panel (if debug is enabled) -->
-        <?php if (get_option('cai_debug', false)): ?>
-            
-        <?php endif; ?>
     <?php endif; ?>
 </div>

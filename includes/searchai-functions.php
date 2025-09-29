@@ -260,10 +260,6 @@ trait Creator_AI_SearchAI_Functions {
             $conversation_history = array();
         }
         
-        // Log the query if debugging is enabled
-        if (method_exists($this, 'is_debugging_enabled') && $this->is_debugging_enabled()) {
-            $this->log_debug_data('SearchAI Query', $query);
-        }
         
         // Step 1: Find relevant content from our website
         $site_content = $this->find_relevant_site_content($query);
@@ -545,9 +541,6 @@ trait Creator_AI_SearchAI_Functions {
         $access_token = $this->get_access_token();
         
         if (empty($access_token)) {
-            if (method_exists($this, 'is_debugging_enabled') && $this->is_debugging_enabled()) {
-                $this->log_debug_data('Web Search', 'Failed to get access token', true);
-            }
             return $results;
         }
         
@@ -571,9 +564,6 @@ trait Creator_AI_SearchAI_Functions {
         $response = cai_remote_get($url, $args);
         
         if (is_wp_error($response)) {
-            if (method_exists($this, 'is_debugging_enabled') && $this->is_debugging_enabled()) {
-                $this->log_debug_data('Web Search', $response->get_error_message(), true);
-            }
             return $results;
         }
         
@@ -605,7 +595,7 @@ trait Creator_AI_SearchAI_Functions {
      */
     protected function generate_response($query, $content_items, $conversation_history = array()) {
         // Get API key and model
-        $api_key = get_option('cai_openai_api_key');
+        $api_key = Creator_AI::get_credential('cai_openai_api_key');
         $model = get_option('cai_openai_model', 'gpt-4o');
         
         if (empty($api_key)) {

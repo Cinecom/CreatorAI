@@ -37,17 +37,11 @@ trait Creator_AI_YouTube_Article_Functions {
         
         $channel_id = get_option('cai_youtube_channel_id');
         if (empty($channel_id)) {
-            if ($this->is_debugging_enabled()) {
-                $this->log_debug_data('YouTube API', 'Channel ID not set', true);
-            }
             wp_send_json_error('YouTube Channel ID must be set.');
         }
         
         $token = $this->get_access_token();
         if (!$token) {
-            if ($this->is_debugging_enabled()) {
-                $this->log_debug_data('YouTube API', 'Failed to get OAuth access token', true);
-            }
             wp_send_json_error("Failed to get OAuth access token.");
         }
         
@@ -63,21 +57,9 @@ trait Creator_AI_YouTube_Article_Functions {
             'timeout' => 30
         ));
         
-        // Log the raw API response for debugging
-        if ($this->is_debugging_enabled()) {
-            $body = wp_remote_retrieve_body($response);
-            $this->log_debug_data('YouTube API', array(
-                'url' => $url,
-                'status_code' => wp_remote_retrieve_response_code($response),
-                'response' => json_decode($body, true)
-            ));
-        }
         
         $result = $this->handle_api_error($response, 'YouTube API');
         if ($result['error']) {
-            if ($this->is_debugging_enabled()) {
-                $this->log_debug_data('YouTube API Error', $result['message'], true);
-            }
             wp_send_json_error($result['message']);
         }
         
@@ -197,38 +179,72 @@ trait Creator_AI_YouTube_Article_Functions {
         }
     }
 
-// ARTICLE CREATION
-    public function create_youtube_article() {
+// BACKGROUND ARTICLE CREATION
+    public function create_youtube_article_background() {
         check_ajax_referer('yta_nonce', 'nonce');
-        
+
         // Validate video ID
         $videoId = isset($_POST['videoId']) ? sanitize_text_field($_POST['videoId']) : '';
         if (empty($videoId)) {
             wp_send_json_error("Video ID is required.");
         }
+
+        // Store a "started" status immediately for polling to detect
+        set_transient('yta_result_' . $videoId, array(
+            'status' => 'started',
+            'timestamp' => time()
+        ), 300);
+
+        // Send immediate response - processing will start
+        wp_send_json_success(array('status' => 'processing', 'video_id' => $videoId));
+    }
+
+// ARTICLE CREATION
+    public function create_youtube_article() {
+        error_log('=== CREATOR AI DEBUG START === ' . date('Y-m-d H:i:s'));
+        
+        check_ajax_referer('yta_nonce', 'nonce');
+        error_log('Creator AI Debug: Nonce validated at ' . date('Y-m-d H:i:s'));
+        
+        // Validate video ID
+        $videoId = isset($_POST['videoId']) ? sanitize_text_field($_POST['videoId']) : '';
+        if (empty($videoId)) {
+            error_log('Creator AI Debug: ERROR - No video ID provided');
+            wp_send_json_error("Video ID is required.");
+        }
+        error_log('Creator AI Debug: Video ID validated: ' . $videoId . ' at ' . date('Y-m-d H:i:s'));
         
         try {
             // 1. Validate prerequisites
+            error_log('Creator AI Debug: STEP 1 - Starting API validation at ' . date('Y-m-d H:i:s'));
             $this->validate_api_credentials();
+            error_log('Creator AI Debug: STEP 1 - API validation completed at ' . date('Y-m-d H:i:s'));
             
             // 2. Fetch video data (details and transcript)
+            error_log('Creator AI Debug: STEP 2 - Starting video data fetch at ' . date('Y-m-d H:i:s'));
             $video_data = $this->fetch_video_data($videoId);
+            error_log('Creator AI Debug: STEP 2 - Video data fetched at ' . date('Y-m-d H:i:s'));
             
             // 3. Generate article content
+            error_log('Creator AI Debug: STEP 3 - Starting article generation at ' . date('Y-m-d H:i:s'));
             $article_data = $this->generate_article_content(
                 $video_data['title'], 
                 $video_data['transcript'],
                 $this->get_filtered_categories()
             );
+            error_log('Creator AI Debug: STEP 3 - Article generation completed at ' . date('Y-m-d H:i:s'));
             
             // 4. Process article content
+            error_log('Creator AI Debug: STEP 4 - Starting article processing at ' . date('Y-m-d H:i:s'));
             $processed_content = $this->process_article_content(
                 $article_data['article'],
                 $videoId,
                 $video_data['transcript']
             );
+            error_log('Creator AI Debug: STEP 4 - Article processing completed at ' . date('Y-m-d H:i:s'));
             
             // 5. Create WordPress post
+            error_log('Creator AI Debug: STEP 5 - Starting post creation at ' . date('Y-m-d H:i:s'));
             $post_id = $this->create_complete_post(
                 $video_data['title'],
                 $processed_content,
@@ -237,16 +253,39 @@ trait Creator_AI_YouTube_Article_Functions {
                 $videoId,
                 $article_data
             );
+            error_log('Creator AI Debug: STEP 5 - Post creation completed, Post ID: ' . $post_id . ' at ' . date('Y-m-d H:i:s'));
             
-            if (method_exists($this, 'is_debugging_enabled') && $this->is_debugging_enabled()) {
-                $response_data['debug_data'] = get_option('creator_ai_debug_data', array());
-            }
-            // 6. Return success
-            wp_send_json_success(array('post_id' => $post_id));
+            $response_data = array('post_id' => $post_id);
+            
+            
+            // 6. Store success status for polling
+            error_log('Creator AI Debug: STEP 6 - Storing success status at ' . date('Y-m-d H:i:s'));
+
+            // Store the result in a transient for polling
+            set_transient('yta_result_' . $videoId, array(
+                'post_id' => $post_id,
+                'status' => 'completed',
+                'timestamp' => time()
+            ), 300); // 5 minutes
+
+            error_log('Creator AI Debug: Success status stored at ' . date('Y-m-d H:i:s'));
+
+            // Return the post_id instead of sending JSON response (will be handled by caller)
+            return $post_id;
 
             
         } catch (Exception $e) {
-            wp_send_json_error('Error: ' . $e->getMessage());
+            error_log('Creator AI Debug: EXCEPTION caught: ' . $e->getMessage() . ' at ' . date('Y-m-d H:i:s'));
+
+            // Store error status for polling
+            set_transient('yta_result_' . $videoId, array(
+                'error' => $e->getMessage(),
+                'status' => 'failed',
+                'timestamp' => time()
+            ), 300);
+
+            // Let the caller handle the response
+            throw $e;
         }
     }
     protected function fetch_video_data($videoId) {
@@ -282,19 +321,28 @@ trait Creator_AI_YouTube_Article_Functions {
         return $combined_data;
     }
     protected function process_article_content($article, $videoId, $transcript) {
+        error_log('Creator AI Debug: process_article_content - Starting link processing at ' . date('Y-m-d H:i:s'));
         // 1. Process all links in one step
         $article = $this->process_all_links($article);
+        error_log('Creator AI Debug: process_article_content - Link processing completed at ' . date('Y-m-d H:i:s'));
         
+        error_log('Creator AI Debug: process_article_content - Starting paragraph structure improvement at ' . date('Y-m-d H:i:s'));
         // 2. Improve paragraph structure
         $article = $this->improve_paragraph_structure($article);
+        error_log('Creator AI Debug: process_article_content - Paragraph structure improvement completed at ' . date('Y-m-d H:i:s'));
         
+        error_log('Creator AI Debug: process_article_content - Starting paragraph split at ' . date('Y-m-d H:i:s'));
         // 3. Split into paragraphs
         $paragraphs = preg_split("/\r\n\r\n|\n\n|\r\r|<\/p>\s*<p>/", $article);
+        error_log('Creator AI Debug: process_article_content - Paragraph split completed, found ' . count($paragraphs) . ' paragraphs at ' . date('Y-m-d H:i:s'));
         
+        error_log('Creator AI Debug: process_article_content - Processing uploaded images at ' . date('Y-m-d H:i:s'));
         // 4. Process uploaded images
         $uploaded_images = isset($_POST['uploaded_images']) ? $_POST['uploaded_images'] : array();
         $uploaded_images = is_array($uploaded_images) ? array_unique($uploaded_images) : array();
+        error_log('Creator AI Debug: process_article_content - Found ' . count($uploaded_images) . ' uploaded images at ' . date('Y-m-d H:i:s'));
         
+        error_log('Creator AI Debug: process_article_content - Starting content formatting at ' . date('Y-m-d H:i:s'));
         // 5. Build article content with proper formatting
         $is_generate_blocks = is_plugin_active("generateblocks/plugin.php");
         
@@ -305,28 +353,42 @@ trait Creator_AI_YouTube_Article_Functions {
             $transcript, 
             $is_generate_blocks
         );
+        error_log('Creator AI Debug: process_article_content - Content formatting completed at ' . date('Y-m-d H:i:s'));
         
+        error_log('Creator AI Debug: process_article_content - Starting HTML markup fix at ' . date('Y-m-d H:i:s'));
         // 6. Fix HTML markup
-        return $this->fix_html_markup($final_content);
+        $result = $this->fix_html_markup($final_content);
+        error_log('Creator AI Debug: process_article_content - HTML markup fix completed at ' . date('Y-m-d H:i:s'));
+        return $result;
     }
     protected function create_complete_post($title, $content, $pubdate, $thumbnail_url, $videoId, $article_data) {
+        error_log('Creator AI Debug: create_complete_post - Starting featured image setting at ' . date('Y-m-d H:i:s'));
         // 1. Set featured image
         $thumb_id = $this->set_featured_image($thumbnail_url, $title);
         if (!$thumb_id) {
+            error_log('Creator AI Debug: create_complete_post - ERROR: Failed to set featured image at ' . date('Y-m-d H:i:s'));
             throw new Exception('Error setting featured image.');
         }
+        error_log('Creator AI Debug: create_complete_post - Featured image set, ID: ' . $thumb_id . ' at ' . date('Y-m-d H:i:s'));
         
+        error_log('Creator AI Debug: create_complete_post - Starting WordPress post creation at ' . date('Y-m-d H:i:s'));
         // 2. Create post
         $post_id = $this->create_wordpress_post($title, $content, $pubdate, $thumb_id);
         if (!$post_id) {
+            error_log('Creator AI Debug: create_complete_post - ERROR: Failed to create WordPress post at ' . date('Y-m-d H:i:s'));
             throw new Exception('Error creating post.');
         }
+        error_log('Creator AI Debug: create_complete_post - WordPress post created, ID: ' . $post_id . ' at ' . date('Y-m-d H:i:s'));
         
+        error_log('Creator AI Debug: create_complete_post - Storing YouTube video ID meta at ' . date('Y-m-d H:i:s'));
         // 3. Store YouTube Video ID in post meta
         update_post_meta($post_id, '_youtube_video_id', $videoId);
+        error_log('Creator AI Debug: create_complete_post - YouTube video ID meta stored at ' . date('Y-m-d H:i:s'));
         
+        error_log('Creator AI Debug: create_complete_post - Starting post metadata processing at ' . date('Y-m-d H:i:s'));
         // 4. Process post metadata
         $this->process_youtube_post_metadata($post_id, $title, $videoId, $content, $article_data);
+        error_log('Creator AI Debug: create_complete_post - Post metadata processing completed at ' . date('Y-m-d H:i:s'));
         
         return $post_id;
     }
@@ -515,7 +577,7 @@ trait Creator_AI_YouTube_Article_Functions {
             // Insert image block after every $img_interval elements.
             if ((($i + 1) % $img_interval == 0) && ($img_index < $total_images)) {
                 try {
-                    $final_content .= $this->generate_image_block($uploaded_images[$img_index], $transcript, $use_generate_blocks,false);
+                    $final_content .= $this->generate_image_block($uploaded_images[$img_index], $transcript, $use_generate_blocks, false);
                 } catch (Exception $e) {
                     $img_url = wp_get_attachment_url($uploaded_images[$img_index]);
                     if ($img_url) {
@@ -544,7 +606,7 @@ trait Creator_AI_YouTube_Article_Functions {
         // Append any remaining images.
         while ($img_index < $total_images) {
             try {
-                $final_content .= $this->generate_image_block($uploaded_images[$img_index], $transcript, $use_generate_blocks,false);
+                $final_content .= $this->generate_image_block($uploaded_images[$img_index], $transcript, $use_generate_blocks, false);
             } catch (Exception $e) {
                 $img_url = wp_get_attachment_url($uploaded_images[$img_index]);
                 if ($img_url) {
@@ -643,9 +705,6 @@ trait Creator_AI_YouTube_Article_Functions {
     protected function get_youtube_transcript($videoId) {
         $token = $this->get_access_token();
         if (!$token) {
-            if ($this->is_debugging_enabled()) {
-                $this->log_debug_data('YouTube Transcript API', 'Failed to get access token', true);
-            }
             return '';
         }
         
@@ -660,12 +719,6 @@ trait Creator_AI_YouTube_Article_Functions {
         
         // Check for errors in the response
         if (is_wp_error($response)) {
-            if ($this->is_debugging_enabled()) {
-                $this->log_debug_data('YouTube Transcript API', array(
-                    'url' => $url,
-                    'error' => $response->get_error_message()
-                ), true);
-            }
             return '';
         }
         
@@ -673,14 +726,6 @@ trait Creator_AI_YouTube_Article_Functions {
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
         
-        // Log the captions list response for debugging
-        if ($this->is_debugging_enabled()) {
-            $this->log_debug_data('YouTube Captions API', array(
-                'url' => $url,
-                'status_code' => $status_code,
-                'response' => $data
-            ));
-        }
         
         // Check for quota exceeded error
         if ($status_code == 403 && !empty($data['error']['errors'])) {
@@ -751,7 +796,7 @@ trait Creator_AI_YouTube_Article_Functions {
 
 // PARAGRAPHS / HEADINGS / MEDIA
     protected function generate_combined_content($title, $transcript, $categories) {
-        $key = get_option('cai_openai_api_key');
+        $key = Creator_AI::get_credential('cai_openai_api_key');
         if (empty($key)) {
             return array();
         }
@@ -819,9 +864,18 @@ trait Creator_AI_YouTube_Article_Functions {
             $combined_system_prompt .= "- category: The selected category name\n";
         }
         
+        // Determine appropriate token limit based on model
+        $model = $this->api_settings['openai_model'];
+        $token_limit = $this->api_settings['max_tokens'];
+        
+        // For reasoning models (gpt-5 series), significantly increase token limit
+        if (strpos(strtolower($model), 'gpt-5') !== false) {
+            $token_limit = max(16000, $token_limit * 4); // At least 16k tokens for reasoning models
+        }
+        
         // Build request data
         $data = array(
-            "model" => $this->api_settings['openai_model'],
+            "model" => $model,
             "messages" => array(
                 array(
                     "role" => "system", 
@@ -833,7 +887,7 @@ trait Creator_AI_YouTube_Article_Functions {
                 )
             ),
             "temperature" => mt_rand(650, 750) / 1000,
-            "max_tokens" => $this->api_settings['max_tokens'],
+            "max_tokens" => $token_limit,
             "user" => 'session_' . time() . '_' . mt_rand(1, 10000)
         );
         
@@ -853,6 +907,11 @@ trait Creator_AI_YouTube_Article_Functions {
             }
             
             $response = trim($result['choices'][0]['message']['content']);
+            
+            // Check for empty content (common with reasoning models hitting token limits)
+            if (empty($response)) {
+                return array();
+            }
             
             // Save the raw AI response for debugging
             update_option('yta_last_raw_response', $response);
@@ -918,6 +977,7 @@ trait Creator_AI_YouTube_Article_Functions {
         }
     }
     protected function process_youtube_post_metadata($post_id, $title, $videoId, $content, $combined_data) {
+        error_log('Creator AI Debug: process_youtube_post_metadata - Starting tag processing at ' . date('Y-m-d H:i:s'));
         // Set tags if available
         if (!empty($combined_data['tags'])) {
             $tags = explode(',', $combined_data['tags']);
@@ -927,14 +987,19 @@ trait Creator_AI_YouTube_Article_Functions {
             }
             if (!empty($clean_tags)) {
                 wp_set_post_tags($post_id, $clean_tags);
+                error_log('Creator AI Debug: process_youtube_post_metadata - Tags set: ' . implode(', ', $clean_tags) . ' at ' . date('Y-m-d H:i:s'));
             }
         }
+        error_log('Creator AI Debug: process_youtube_post_metadata - Tag processing completed at ' . date('Y-m-d H:i:s'));
         
+        error_log('Creator AI Debug: process_youtube_post_metadata - Starting category processing at ' . date('Y-m-d H:i:s'));
         // Set category if available
         if (!empty($combined_data['category']) && !isset($_POST['skipCategory'])) {
+            error_log('Creator AI Debug: process_youtube_post_metadata - Getting filtered categories at ' . date('Y-m-d H:i:s'));
             $categories = $this->get_filtered_categories();
             if (!empty($categories)) {
                 $cat_name = $combined_data['category'];
+                error_log('Creator AI Debug: process_youtube_post_metadata - AI suggested category: ' . $cat_name . ' at ' . date('Y-m-d H:i:s'));
                 
                 // Store the AI's suggestion for debugging
                 update_post_meta($post_id, '_category_ai_suggestion', $cat_name);
@@ -967,11 +1032,15 @@ trait Creator_AI_YouTube_Article_Functions {
                 
                 // Assign category if ID found
                 if ($cat_id) {
+                    error_log('Creator AI Debug: process_youtube_post_metadata - Setting category ID: ' . $cat_id . ' at ' . date('Y-m-d H:i:s'));
                     wp_set_post_categories($post_id, array($cat_id));
+                    error_log('Creator AI Debug: process_youtube_post_metadata - Category set at ' . date('Y-m-d H:i:s'));
                 }
             }
         }
+        error_log('Creator AI Debug: process_youtube_post_metadata - Category processing completed at ' . date('Y-m-d H:i:s'));
         
+        error_log('Creator AI Debug: process_youtube_post_metadata - Starting SEO description processing at ' . date('Y-m-d H:i:s'));
         // Set SEO description if available
         if (!empty($combined_data['meta_description'])) {
             $desc = $combined_data['meta_description'];
@@ -981,16 +1050,21 @@ trait Creator_AI_YouTube_Article_Functions {
                 $desc = substr($desc, 0, 160);
             }
             
+            error_log('Creator AI Debug: process_youtube_post_metadata - Updating post excerpt at ' . date('Y-m-d H:i:s'));
             wp_update_post(array(
                 'ID' => $post_id,
                 'post_excerpt' => $desc
             ));
+            error_log('Creator AI Debug: process_youtube_post_metadata - Post excerpt updated at ' . date('Y-m-d H:i:s'));
             
             // SEO plugins compatibility
             if (function_exists('is_plugin_active') && is_plugin_active('autodescription/autodescription.php')) {
+                error_log('Creator AI Debug: process_youtube_post_metadata - Setting autodescription meta at ' . date('Y-m-d H:i:s'));
                 update_post_meta($post_id, '_autodescription_description', $desc);
+                error_log('Creator AI Debug: process_youtube_post_metadata - Autodescription meta set at ' . date('Y-m-d H:i:s'));
             }
         }
+        error_log('Creator AI Debug: process_youtube_post_metadata - SEO description processing completed at ' . date('Y-m-d H:i:s'));
     }
     protected function generate_youtube_embed_block($videoId) {
         return '<!-- wp:embed {"url":"https://www.youtube.com/watch?v=' . $videoId . '","type":"video","providerNameSlug":"youtube","responsive":true,"className":"wp-embed-aspect-16-9 wp-has-aspect-ratio"} -->
@@ -1012,7 +1086,7 @@ trait Creator_AI_YouTube_Article_Functions {
             'filename' => sanitize_title('video-image-' . $attachment_id)
         );
 
-        $key = get_option('cai_openai_api_key');
+        $key = Creator_AI::get_credential('cai_openai_api_key');
         if (empty($key)) {
             return $fallback;
         }
@@ -1101,9 +1175,6 @@ trait Creator_AI_YouTube_Article_Functions {
             return $fallback;
             
         } catch (Exception $e) {
-            if ($this->is_debugging_enabled()) {
-                $this->log_debug_data('OpenAI Vision API Error', $e->getMessage(), true);
-            }
             return $fallback;
         }
     }

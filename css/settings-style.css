@@ -712,3 +712,62 @@ textarea:focus {
 .cai-theme-styling-notice.show {
     display: block;
 }
+
+/* Secure credential styling */
+.cai-input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.cai-input-group input[type="password"],
+.cai-input-group input[type="text"] {
+    /* Match WordPress admin regular-text class width */
+    width: 25em;
+}
+
+.cai-toggle-credential {
+    font-size: 16px;
+    line-height: 1;
+    padding: 4px 8px;
+    margin: 0;
+    height: auto;
+    min-height: 30px;
+    cursor: pointer;
+    border: 1px solid #c3c4c7;
+    background: #f6f7f7;
+    color: #50575e;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+}
+
+.cai-toggle-credential:hover {
+    background: #f0f0f1;
+    border-color: #8c8f94;
+}
+
+.cai-toggle-credential:focus {
+    box-shadow: 0 0 0 1px #2271b1;
+    border-color: #2271b1;
+    outline: none;
+}
+
+/* Credential security indicators */
+.description[style*="color: #46b450"] {
+    font-weight: 500;
+    padding: 8px 12px;
+    background: #f0f6e6;
+    border-left: 4px solid #46b450;
+    margin-top: 8px;
+    border-radius: 0 4px 4px 0;
+}
+
+.description[style*="color: #d63638"] {
+    font-weight: 500;
+    padding: 8px 12px;
+    background: #fef8f8;
+    border-left: 4px solid #d63638;
+    margin-top: 8px;
+    border-radius: 0 4px 4px 0;
+}

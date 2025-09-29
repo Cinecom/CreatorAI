@@ -68,9 +68,6 @@ trait Creator_AI_Article_Formatting {
 	            $filename = isset($seo['filename']) ? $seo['filename'] : sanitize_title($alt);
 	        } catch (Exception $e) {
 	            // Log the error but continue with fallback
-	            if ($this->is_debugging_enabled()) {
-	                $this->log_debug_data('Image SEO Generation Error', $e->getMessage(), true);
-	            }
 	            $alt = 'Video content image';
 	            $caption = 'Image from video content';
 	            $filename = sanitize_title('video-image-' . $attachment_id);
@@ -429,9 +426,9 @@ trait Creator_AI_Article_Formatting {
 	        $li_items = $matches[1];
 	        $list_output = "";
 	        
-	        foreach ($li_items as $li_text) {
+	        foreach ($li_items as $index => $li_text) {
 	            $li_text = trim($li_text);  // Don't strip tags here
-	            $innerId = 'list_item_' . $key . '_' . substr(md5(uniqid(mt_rand(), true)), 0, 8);
+	            $innerId = 'list_item_' . $outerId . '_' . $index . '_' . substr(md5(uniqid(mt_rand(), true)), 0, 8);
 	            $list_output .= "<!-- wp:generateblocks/text {\"uniqueId\":\"{$innerId}\",\"tagName\":\"li\"} -->\n";
 	            $list_output .= "<li class=\"gb-text\">" . $li_text . "</li>\n";  // Preserve HTML inside list items
 	            $list_output .= "<!-- /wp:generateblocks/text -->\n";
@@ -807,7 +804,7 @@ trait Creator_AI_Article_Formatting {
                             // Get text from the paragraph
                             $paragraphText = $paragraph->textContent;
                             
-                            // Debug if the keyword is in this specific paragraph
+                            // Check if the keyword is in this specific paragraph
                             if (preg_match($pattern, $paragraphText)) {
                                 
                                 // Create anchor text (the actual word with the case preserved)
@@ -944,7 +941,7 @@ trait Creator_AI_Article_Formatting {
 	        throw new Exception("Failed to authenticate with YouTube.");
 	    }
 	    
-	    $key = get_option('cai_openai_api_key');
+	    $key = Creator_AI::get_credential('cai_openai_api_key');
 	    if (empty($key)) {
 	        throw new Exception("OpenAI API key is required.");
 	    }

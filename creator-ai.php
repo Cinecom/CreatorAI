@@ -2,7 +2,7 @@
 /*
 Plugin Name: Creator AI
 Description: The most power Wordpress plugin ever created! Powered by an A.I. more intelligent than the universe itself. 
-Version: 4.7.1
+Version: 4.8.0
 Author: <strong>Jordy Vandeput</strong> <em>(in reality written by A.I.)</em>
 */
 
@@ -33,6 +33,7 @@ include_once(ABSPATH . 'wp-admin/includes/plugin.php');
 
     // INCLUDES
     require_once plugin_dir_path(__FILE__) . 'includes/default-variables.php';
+    require_once plugin_dir_path(__FILE__) . 'includes/security.php';
     require_once plugin_dir_path(__FILE__) . 'includes/api.php';
     require_once plugin_dir_path(__FILE__) . 'includes/article-formatting.php';
     require_once plugin_dir_path(__FILE__) . 'includes/youtube-article-functions.php';
@@ -47,6 +48,7 @@ include_once(ABSPATH . 'wp-admin/includes/plugin.php');
 class Creator_AI {
 
     use Creator_AI_Default_Variables;
+    use Creator_AI_Security;
     use Creator_AI_API;
     use Creator_AI_Article_Formatting;
     use Creator_AI_YouTube_Article_Functions;
@@ -69,20 +71,17 @@ class Creator_AI {
         add_action('admin_enqueue_scripts', array($this, 'enqueue_assets'));
         add_action('admin_init', array($this, 'register_settings'));
         
-        // Debug Panel
-        add_action('admin_init', array($this, 'clear_debug_data'));
-
-        add_action('admin_footer', array($this, 'display_debug_panel'));
 
         // AJAX handlers
         add_action('wp_ajax_yta_fetch_videos', array($this, 'fetch_videos'));
-        add_action('wp_ajax_yta_create_article', array($this, 'create_youtube_article'));
+        add_action('wp_ajax_yta_create_article', array($this, 'create_youtube_article_background'));
+        add_action('wp_ajax_yta_process_article', array($this, 'process_youtube_article'));
         add_action('wp_ajax_yta_upload_image', array($this, 'handle_image_upload'));
         add_action('wp_ajax_cai_test_openai', array($this, 'test_openai_api'));
         add_action('wp_ajax_cai_test_google_api', array($this, 'test_google_api'));
         add_action('wp_ajax_yta_check_post_exists', array($this, 'check_youtube_post_exists'));
-        add_action('wp_ajax_cai_clear_debug_data', array($this, 'ajax_clear_debug_data'));
-        add_action('wp_ajax_cai_get_debug_data', array($this, 'ajax_get_debug_data'));
+        add_action('wp_ajax_yta_check_status', array($this, 'check_article_status'));
+
 
         add_action('init', array($this, 'initialize_searchai_block'), 11);
         add_action('init', array($this, 'initialize_course_creator'), 11);
@@ -193,8 +192,6 @@ class Creator_AI {
             'nonce' => wp_create_nonce('cai_nonce')
         ));
         
-        wp_register_style('cai-debug-css', plugin_dir_url(__FILE__) . '/css/debug.css', array(), $version);
-        wp_register_script('cai-debug-js', plugin_dir_url(__FILE__) . '/js/debug.js', array('jquery', 'cai-api-js'), $version, true);
 
         wp_register_script('cai-settings-js', plugin_dir_url(__FILE__) . '/js/settings.js', array('jquery', 'cai-api-js'), $version, true);
         wp_register_script('yt-article-js', plugin_dir_url(__FILE__) . '/js/yt-article.js', array('jquery', 'cai-api-js'), $version, true);
@@ -203,10 +200,6 @@ class Creator_AI {
         
 
 
-        if (get_option('cai_debug', false) && strpos($hook, 'creator-ai') !== false) {
-            wp_enqueue_style('cai-debug-css');
-            wp_enqueue_script('cai-debug-js');
-        }
 
         $init_dependencies = array('jquery', 'cai-api-js');
 
@@ -293,8 +286,11 @@ class Creator_AI {
     }
     public function register_settings() {
         
-        //API
-        register_setting('creator_ai_settings_group', 'cai_openai_api_key');
+        //API - Secure credential storage
+        register_setting('creator_ai_settings_group', 'cai_openai_api_key', array(
+            'sanitize_callback' => array($this, 'sanitize_openai_api_key'),
+            'type' => 'string'
+        ));
         register_setting('creator_ai_settings_group', 'cai_openai_model');
         register_setting(
             'creator_ai_settings_group', 
@@ -305,14 +301,11 @@ class Creator_AI {
         );
         register_setting('creator_ai_settings_group', 'cai_youtube_channel_id');
         register_setting('creator_ai_settings_group', 'cai_google_client_id');
-        register_setting('creator_ai_settings_group', 'cai_google_client_secret');
-
-        register_setting('creator_ai_settings_group', 'cai_debug', array(
-            'type' => 'boolean',
-            'sanitize_callback' => function($input) {
-                return (bool) $input;
-            }
+        register_setting('creator_ai_settings_group', 'cai_google_client_secret', array(
+            'sanitize_callback' => array($this, 'sanitize_google_client_secret'),
+            'type' => 'string'
         ));
+
 
         //YouTube Article
         register_setting('creator_ai_settings_group', 'yta_internal_keywords', array(
@@ -356,6 +349,89 @@ class Creator_AI {
         
         // GitHub updater settings
         add_action('wp_ajax_cai_force_update_check', array($this, 'ajax_force_update_check'));
+        
+        // Migrate existing credentials to encrypted storage
+        add_action('admin_init', array($this, 'migrate_credentials_on_load'), 5);
+    }
+    
+    /**
+     * Sanitization callback for OpenAI API Key
+     */
+    public function sanitize_openai_api_key($input) {
+        return $this->sanitize_specific_credential($input, 'cai_openai_api_key');
+    }
+    
+    /**
+     * Sanitization callback for Google Client Secret
+     */
+    public function sanitize_google_client_secret($input) {
+        return $this->sanitize_specific_credential($input, 'cai_google_client_secret');
+    }
+    
+    /**
+     * Generic sanitization method for specific credentials
+     */
+    private function sanitize_specific_credential($input, $option_name) {
+        // Check permissions
+        if (!self::can_access_credentials()) {
+            add_settings_error('creator_ai_settings', 'access_denied', 'Insufficient permissions to modify credentials.');
+            return get_option($option_name, ''); // Return existing value to prevent changes
+        }
+        
+        // If input is empty, allow deletion
+        if (empty($input)) {
+            self::clear_credential_cache($option_name);
+            return '';
+        }
+        
+        // Validate credential format
+        $validation = self::validate_credential_format($option_name, $input);
+        if (is_wp_error($validation)) {
+            add_settings_error('creator_ai_settings', 'invalid_credential', $validation->get_error_message());
+            return get_option($option_name, ''); // Return existing value
+        }
+        
+        // Encrypt the credential and return it for WordPress to store
+        if (!function_exists('openssl_encrypt')) {
+            error_log('Creator AI: OpenSSL not available, storing credential in plain text (SECURITY RISK)');
+            self::clear_credential_cache($option_name);
+            return $input;
+        }
+        
+        $encrypted = self::encrypt_credential($input);
+        if (!empty($encrypted)) {
+            // Add prefix to identify encrypted values
+            $encrypted = 'cai_encrypted:' . $encrypted;
+            self::clear_credential_cache($option_name); // Clear cache so next retrieval will decrypt fresh
+            return $encrypted; // Let WordPress store the encrypted value
+        }
+        
+        // Fallback to plain text if encryption fails
+        error_log('Creator AI: Failed to encrypt credential, storing in plain text');
+        self::clear_credential_cache($option_name);
+        return $input;
+    }
+    
+    /**
+     * Migrate existing credentials to encrypted storage
+     */
+    public function migrate_credentials_on_load() {
+        // Only run once and only for admins
+        if (!self::can_access_credentials() || get_option('cai_credentials_migrated', false)) {
+            return;
+        }
+        
+        $migrated = self::migrate_credentials_to_encrypted();
+        if ($migrated > 0) {
+            update_option('cai_credentials_migrated', true);
+            add_action('admin_notices', function() use ($migrated) {
+                echo '<div class="notice notice-success is-dismissible"><p>';
+                echo sprintf('Creator AI: Successfully migrated %d credential(s) to encrypted storage for enhanced security.', $migrated);
+                echo '</p></div>';
+            });
+        } else {
+            update_option('cai_credentials_migrated', true);
+        }
     }
     
     public function ajax_force_update_check() {
@@ -387,129 +463,6 @@ class Creator_AI {
         require_once plugin_dir_path(__FILE__) . '/pages/course-creator.php';
     }
 
-// DEBUG FUNCTIONS
-    protected function is_debugging_enabled() {
-        return get_option('cai_debug', false);
-    }
-
-    protected function log_debug_data($api_name, $data, $is_error = false) {
-        if (!$this->is_debugging_enabled()) {
-            return;
-        }
-        
-        // Store in options
-        $debug_data = get_option('creator_ai_debug_data', array());
-        
-        // Add new entry
-        $debug_data[] = array(
-            'timestamp' => current_time('mysql'),
-            'api' => $api_name,
-            'data' => $data,
-            'is_error' => $is_error
-        );
-        
-        // Limit to most recent 10 entries
-        if (count($debug_data) > 10) {
-            $debug_data = array_slice($debug_data, -10);
-        }
-        
-        update_option('creator_ai_debug_data', $debug_data);
-    }
-
-    public function clear_debug_data() {
-        if (isset($_GET['clear_debug']) && $_GET['clear_debug'] == 1 && 
-            isset($_GET['page']) && (
-                $_GET['page'] === 'creator-ai'
-            ) && 
-            get_option('cai_debug', false)) {
-            
-            delete_option('creator_ai_debug_data');
-            wp_redirect(remove_query_arg('clear_debug'));
-            exit;
-        }
-    }
-
-    public function ajax_clear_debug_data() {
-        // Verify nonce
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'cai_nonce')) {
-            wp_send_json_error('Nonce verification failed');
-        }
-        
-        // Check if user has permissions
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error('Permission denied');
-        }
-        
-        // Delete debug data
-        $deleted = delete_option('creator_ai_debug_data');
-        
-        wp_send_json_success(array('cleared' => $deleted));
-    }
-
-    public function display_debug_panel() {
-        if (!get_option('cai_debug', false) || strpos($_SERVER['REQUEST_URI'], 'creator-ai') === false) {
-            return;
-        }
-        
-        // Get debug data from options
-        $debug_data = get_option('creator_ai_debug_data', array());
-        
-        // Display the debug panel
-        echo '<div class="cai-debug-panel">';
-        echo '<div class="cai-debug-header">';
-        echo '<h3>API Debugging Information</h3>';
-        echo '<div class="cai-debug-actions">';
-        echo '<a href="#" class="cai-debug-clear">Clear</a>';
-        echo '<span class="cai-debug-toggle">Show/Hide Details</span>';
-        echo '</div>';
-        echo '</div>';
-        
-        echo '<div class="cai-debug-content">';
-        
-        if (empty($debug_data)) {
-            echo '<div class="cai-debug-empty">No debug data available yet. Make API requests to see them here.</div>';
-        } else {
-            foreach (array_reverse($debug_data) as $index => $entry) {
-                $timestamp = isset($entry['timestamp']) ? date('H:i:s', strtotime($entry['timestamp'])) : 'Unknown';
-                $status_class = isset($entry['is_error']) && $entry['is_error'] ? 'error' : 'success';
-                $api_name = isset($entry['api']) ? $entry['api'] : 'Unknown API';
-                
-                echo '<div class="cai-debug-item ' . $status_class . '">';
-                echo '<div class="cai-debug-item-header">';
-                echo '<span class="cai-debug-api">' . esc_html($api_name) . '</span>';
-                echo '<span class="cai-debug-time">' . esc_html($timestamp) . '</span>';
-                echo '<span class="cai-debug-item-toggle">+</span>';
-                echo '</div>';
-                
-                echo '<div class="cai-debug-item-content">';
-                echo '<pre>' . esc_html(json_encode(isset($entry['data']) ? $entry['data'] : array(), JSON_PRETTY_PRINT)) . '</pre>';
-                echo '<button class="cai-debug-copy">Copy to clipboard</button>';
-                echo '</div>';
-                
-                echo '</div>';
-            }
-        }
-        
-        echo '</div>'; // End debug content
-        echo '</div>'; // End debug panel
-    }
-
-    public function ajax_get_debug_data() {
-        // Verify nonce
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'cai_nonce')) {
-            wp_send_json_error('Nonce verification failed');
-        }
-        
-        // Check if user has permissions
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error('Permission denied');
-        }
-        
-        // Get the debug data
-        $debug_data = get_option('creator_ai_debug_data', array());
-        
-        wp_send_json_success($debug_data);
-    }
 
 
 
@@ -608,8 +561,6 @@ class Creator_AI {
         // Create sanitized array
         $sanitized = array();
         
-        // Add debug output to see what's coming in from the form
-        error_log("Appearance settings before sanitization: " . print_r($settings, true));
         
         // Sanitize each setting
         $sanitized['use_theme_styling'] = isset($settings['use_theme_styling']) ? (bool) $settings['use_theme_styling'] : false;
@@ -661,7 +612,6 @@ class Creator_AI {
         $sanitized['course_access'] = isset($settings['course_access']) ? sanitize_text_field($settings['course_access']) : '';
         $sanitized['required_role'] = isset($settings['required_role']) ? sanitize_text_field($settings['required_role']) : '';
         
-        error_log("Appearance settings after sanitization: " . print_r($sanitized, true));
         return $sanitized;
     }
 
@@ -700,6 +650,55 @@ class Creator_AI {
 
         $this->cai_track_request();
         return wp_remote_post($url, $args);
+    }
+
+    /**
+     * AJAX handler to check article creation status
+     */
+    public function check_article_status() {
+        check_ajax_referer('yta_nonce', 'nonce');
+        
+        $video_id = isset($_POST['video_id']) ? sanitize_text_field($_POST['video_id']) : '';
+        if (empty($video_id)) {
+            wp_send_json_error('Video ID required');
+        }
+        
+        $result = get_transient('yta_result_' . $video_id);
+        
+        if ($result) {
+            wp_send_json_success($result);
+        } else {
+            wp_send_json_success(array('status' => 'processing'));
+        }
+    }
+
+    /**
+     * Process the actual article creation in a separate request
+     */
+    public function process_youtube_article() {
+        check_ajax_referer('yta_nonce', 'nonce');
+
+        $videoId = isset($_POST['videoId']) ? sanitize_text_field($_POST['videoId']) : '';
+        if (empty($videoId)) {
+            wp_send_json_error("Video ID is required.");
+        }
+
+        // Ensure uploaded_images is available for the article creation method
+        if (!isset($_POST['uploaded_images'])) {
+            $_POST['uploaded_images'] = array();
+        }
+
+        try {
+            // Use the original article creation method
+            $post_id = $this->create_youtube_article();
+
+            // Send success response (though frontend likely won't receive due to timeout)
+            wp_send_json_success(array('post_id' => $post_id));
+
+        } catch (Exception $e) {
+            // Send error response (though frontend likely won't receive due to timeout)
+            wp_send_json_error('Error: ' . $e->getMessage());
+        }
     }
 
 }

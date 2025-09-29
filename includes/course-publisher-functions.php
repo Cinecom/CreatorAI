@@ -51,7 +51,7 @@ trait Creator_AI_Course_Publisher_Functions {
                 'public'             => true,
                 'publicly_queryable' => true,
                 'show_ui'            => true,
-                'show_in_menu'       => 'creator-ai',
+                'show_in_menu'       => false,
                 'query_var'          => true,
                 'rewrite'            => array(
                     'slug'       => $courses_slug,

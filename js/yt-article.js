@@ -245,10 +245,6 @@
                         $('#ytarticle-prev').hide();
                     }
                     
-                    // Handle debug data - direct integration
-                    if (response.data.debug_data && typeof window.updateDebugPanel === 'function') {
-                        window.updateDebugPanel(response.data.debug_data);
-                    }
                 } else {
                     $('#ytarticle-videos').html('<div class="yt-api-error">' + response.data + '</div>');
                 }
@@ -260,7 +256,7 @@
     }
     
     /**
-     * Create article with simplified progress tracking
+     * Create article with improved error handling and progress feedback
      */
     function createArticle(videoId, imageIds) {
         var $videoElement = $('.yta-video[data-video-id="' + videoId + '"]');
@@ -274,24 +270,21 @@
         
         // Clear any previous messages and progress containers
         $status.html('<span class="yt-spinner"></span> <span class="status-message">Initializing article creation...</span>');
-        $videoElement.find('.yt-progress-container').remove(); // Remove any existing progress containers
+        $videoElement.find('.yt-progress-container').remove();
         
-        // Create a progress bar (only one)
+        // Create a progress bar
         var $progressContainer = $('<div class="yt-progress-container"><div class="yt-progress-bar"></div></div>');
         $status.after($progressContainer);
         
         function updateProgressUI(message, percent) {
-            // Update status message
             $status.html('<span class="yt-spinner"></span> <span class="status-message">' + message + '</span>');
-            
-            // Update progress bar
             $progressContainer.find('.yt-progress-bar').css('width', percent + '%');
         }
         
         // Initial status
         updateProgressUI('Starting article creation...', 0);
         
-        // Make the request with a completion callback
+        // Use the original article creation method
         $.ajax({
             url: ytaAjax.ajax_url,
             type: 'POST',
@@ -301,42 +294,53 @@
                 videoId: videoId,
                 uploaded_images: imageIds
             },
-            timeout: 300000, // 5 minutes
+            timeout: 60000, // 60 seconds - allow time for response
             success: function(response) {
-                // Remove processing class
-                $videoElement.removeClass('processing');
-                
-                if (response.success) {
-                    // Handle debug data - direct integration
-                    if (response.data.debug_data && typeof window.updateDebugPanel === 'function') {
-                        window.updateDebugPanel(response.data.debug_data);
-                    }
-                    
-                    // Success - show completion message
-                    $status.html('<span class="status-message">Article created! Redirecting...</span>');
-                    $progressContainer.find('.yt-progress-bar').css('width', '100%');
-                    
-                    // Remove warning before redirect
-                    window.removeEventListener('beforeunload', beforeUnloadHandler);
-                    
-                    // Redirect to edit page after a short delay
-                    setTimeout(function() {
-                        window.location.href = 'post.php?post=' + response.data.post_id + '&action=edit';
-                    }, 1500);
+                if (response.success && response.data.status === 'processing') {
+                    // Processing can start, update UI and trigger actual processing
+                    $status.html('<span class="status-message">Processing article...</span>');
+                    $progressContainer.find('.yt-progress-bar').css('width', '10%');
+
+                    // Trigger the actual processing in a separate non-blocking request
+                    triggerArticleProcessing(videoId, imageIds, $videoElement, $status, $progressContainer);
+                }
+                else if (response.success && response.data.post_id) {
+                    // Direct success (fallback)
+                    handleArticleSuccess(response.data.post_id, $status, $progressContainer);
                 } else {
                     STATE.resetProcess();
-                    $status.html('<span style="color: #d63638; font-weight: bold;">✕ ' + response.data + '</span>');
+                    $videoElement.removeClass('processing');
+                    $status.html('<span style="color: #d63638; font-weight: bold;">✕ ' + (response.data || 'Unknown error') + '</span>');
                 }
             },
             error: function(xhr, status, error) {
-                // Remove processing class
                 $videoElement.removeClass('processing');
-                
+
+                // Check if we got a successful response despite the "error"
+                if (xhr.responseText) {
+                    try {
+                        var response = JSON.parse(xhr.responseText);
+                        if (response.success && response.data.post_id) {
+                            // Article was created successfully despite timeout
+                            handleArticleSuccess(response.data.post_id, $status, $progressContainer);
+                            return;
+                        } else if (response.success && response.data.status === 'processing') {
+                            // Background processing started despite error - start polling
+                            $status.html('<span class="status-message">Processing article...</span>');
+                            $progressContainer.find('.yt-progress-bar').css('width', '95%');
+                            pollForCompletion(response.data.video_id, $videoElement, $status, $progressContainer);
+                            return;
+                        }
+                    } catch(e) {
+                        // Response wasn't JSON, continue with error handling
+                    }
+                }
+
+                // Only show connection error as last resort
                 STATE.resetProcess();
-                $status.html('<span style="color: #d63638; font-weight: bold;">✕ Connection error: ' + 
-                    (status === 'timeout' ? 'Request timed out' : error) + '</span>');
-                
-                // Even if request fails, check if post was created (but only once)
+                $status.html('<span style="color: #d63638; font-weight: bold;">✕ Connection error during creation</span>');
+
+                // Check if post was created despite the error - this is important for user experience
                 if (!$videoElement.hasClass('checked-creation')) {
                     $videoElement.addClass('checked-creation');
                     checkIfPostCreated(videoId);
@@ -412,6 +416,106 @@
     }
 
     /**
+     * Trigger the actual article processing in a separate request
+     */
+    function triggerArticleProcessing(videoId, imageIds, $videoElement, $status, $progressContainer) {
+        // Start the actual processing in background
+        $.ajax({
+            url: ytaAjax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'yta_process_article',
+                nonce: ytaAjax.nonce,
+                videoId: videoId,
+                uploaded_images: imageIds
+            },
+            timeout: 1000, // Very short timeout - we don't wait for this to complete
+            success: function(response) {
+                // Processing triggered successfully
+            },
+            error: function(xhr, status, error) {
+                // Processing trigger completed (expected timeout)
+            }
+        });
+
+        // Start polling immediately for completion
+        pollForCompletion(videoId, $videoElement, $status, $progressContainer);
+    }
+
+    /**
+     * Handle successful article creation
+     */
+    function handleArticleSuccess(post_id, $status, $progressContainer) {
+        STATE.resetProcess();
+
+        // Success - show completion message
+        $status.html('<span class="status-message">Article created successfully! Redirecting...</span>');
+        $progressContainer.find('.yt-progress-bar').css('width', '100%');
+
+        // Remove warning before redirect
+        window.removeEventListener('beforeunload', beforeUnloadHandler);
+
+        // Redirect to edit page
+        setTimeout(function() {
+            window.location.href = 'post.php?post=' + post_id + '&action=edit';
+        }, 1500);
+    }
+
+    /**
+     * Poll for article completion status
+     */
+    function pollForCompletion(video_id, $videoElement, $status, $progressContainer) {
+        var pollCount = 0;
+        var maxPolls = 120; // 2 minutes of polling (1 second intervals)
+
+        function doPoll() {
+            pollCount++;
+
+            if (pollCount > maxPolls) {
+                STATE.resetProcess();
+                $videoElement.removeClass('processing');
+                $status.html('<span style="color: #d63638; font-weight: bold;">✕ Process timed out. Please check posts manually.</span>');
+                return;
+            }
+
+            $.ajax({
+                url: ytaAjax.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'yta_check_status',
+                    nonce: ytaAjax.nonce,
+                    video_id: video_id
+                },
+                timeout: 5000,
+                success: function(response) {
+                    if (response.success && response.data.status === 'completed' && response.data.post_id) {
+                        $videoElement.removeClass('processing');
+                        handleArticleSuccess(response.data.post_id, $status, $progressContainer);
+                    } else if (response.success && response.data.post_id) {
+                        // Handle case where we get post_id directly without status
+                        $videoElement.removeClass('processing');
+                        handleArticleSuccess(response.data.post_id, $status, $progressContainer);
+                    } else if (response.success && response.data.status === 'failed') {
+                        STATE.resetProcess();
+                        $videoElement.removeClass('processing');
+                        $status.html('<span style="color: #d63638; font-weight: bold;">✕ ' + (response.data.error || 'Article creation failed') + '</span>');
+                    } else {
+                        // Still processing, poll again
+                        setTimeout(doPoll, 1000);
+                    }
+                },
+                error: function() {
+                    // Continue polling on error
+                    setTimeout(doPoll, 1000);
+                }
+            });
+        }
+
+        // Start polling after 2 seconds
+        setTimeout(doPoll, 2000);
+    }
+
+    /**
      * Check if post was created despite communication issues
      */
     function checkIfPostCreated(videoId) {
@@ -451,17 +555,6 @@
         });
     }
 
-    // Intercept the fetchVideos response to update debug panel
-    var originalFetchVideos = fetchVideos;
-    fetchVideos = function(pageToken) {
-        originalFetchVideos(pageToken);
-    };
-
-    // Intercept createArticle for debug panel updates
-    var originalCreateArticle = createArticle;
-    createArticle = function(videoId, imageIds) {
-        originalCreateArticle(videoId, imageIds);
-    };
 
     // Initialize YouTube Article functionality
     function init() {

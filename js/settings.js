@@ -232,6 +232,75 @@
 
 
     // Initialize settings page
+    // Initialize credential visibility toggles
+    function initCredentialToggles() {
+        console.log('Initializing credential toggles...'); // Debug log
+        
+        // Check if elements exist
+        const toggleButtons = $('.cai-toggle-credential');
+        console.log('Found toggle buttons:', toggleButtons.length);
+        
+        // Function to toggle credential visibility
+        function toggleCredential($button) {
+            const targetName = $button.data('target');
+            const $input = $('input[name="' + targetName + '"]');
+            
+            console.log('Toggle clicked:', targetName, 'Input found:', $input.length); // Debug log
+            
+            if ($input.length === 0) {
+                console.error('Input field not found for:', targetName);
+                return;
+            }
+            
+            if ($input.attr('type') === 'password') {
+                $input.attr('type', 'text');
+                $button.text('🙈'); // Hide icon
+                $button.attr('title', 'Hide credential');
+                console.log('Showing credential for:', targetName);
+            } else {
+                $input.attr('type', 'password');
+                $button.text('👁️'); // Show icon
+                $button.attr('title', 'Show credential');
+                console.log('Hiding credential for:', targetName);
+            }
+        }
+        
+        // Use event delegation to handle dynamically loaded content
+        $(document).on('click', '.cai-toggle-credential', function(e) {
+            e.preventDefault();
+            toggleCredential($(this));
+        });
+        
+        // Also attach direct event handlers as fallback with a small delay
+        setTimeout(function() {
+            $('.cai-toggle-credential').off('click.credential').on('click.credential', function(e) {
+                e.preventDefault();
+                toggleCredential($(this));
+            });
+            
+            console.log('Direct handlers attached to buttons:', $('.cai-toggle-credential').length);
+        }, 100);
+        
+        // Clear placeholder when focused (so users can see what they're typing)
+        $(document).on('focus', 'input[name="cai_openai_api_key"], input[name="cai_google_client_secret"]', function() {
+            $(this).attr('placeholder', '');
+        });
+        
+        $(document).on('blur', 'input[name="cai_openai_api_key"], input[name="cai_google_client_secret"]', function() {
+            const $input = $(this);
+            const targetName = $input.attr('name');
+            
+            // Restore placeholder if field is empty
+            if (!$input.val()) {
+                if (targetName === 'cai_openai_api_key') {
+                    $input.attr('placeholder', 'Enter your OpenAI API key');
+                } else if (targetName === 'cai_google_client_secret') {
+                    $input.attr('placeholder', 'Enter your Google Client Secret');
+                }
+            }
+        });
+    }
+
     function initGitHubUpdater() {
         $('#check-github-updates').on('click', function() {
             var button = $(this);
@@ -282,6 +351,7 @@
         initAPIConnections(); // Important: Initialize API connections here too
         initCourseCreatorSettings();
         initThemeStylingToggle();
+        initCredentialToggles(); // Initialize credential security features
         initGitHubUpdater();
         
         // Add animation for smooth transitions

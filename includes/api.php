@@ -63,9 +63,16 @@ trait Creator_AI_API {
         if (isset($data['max_tokens'])) {
             try {
                 // SECURITY: Cap tokens at reasonable limits to prevent hosting blocks
-                $max_allowed_tokens = 8000; // Reasonable limit for most requests
+                // Higher limits for reasoning models (gpt-5 series) that need more tokens
+                $model_lower = strtolower($data['model']);
+                if (strpos($model_lower, 'gpt-5') !== false) {
+                    $max_allowed_tokens = 20000; // Higher limit for reasoning models
+                } else {
+                    $max_allowed_tokens = 8000; // Standard limit for other models
+                }
+                
                 if ($data['max_tokens'] > $max_allowed_tokens) {
-                    error_log("Token limit capped from {$data['max_tokens']} to {$max_allowed_tokens} to prevent hosting security blocks");
+                    error_log("Token limit capped from {$data['max_tokens']} to {$max_allowed_tokens} to prevent hosting security blocks (model: {$data['model']})");
                     $data['max_tokens'] = $max_allowed_tokens;
                 }
                 
@@ -93,11 +100,11 @@ trait Creator_AI_API {
 
         // Use default timeout from settings if not specified
         if ($timeout === null) {
-            $timeout = 120; // Default timeout since we can't access instance variables in static context
+            $timeout = 180; // Increased default timeout for complex operations
         }
         
         // SECURITY: Cap timeout to prevent hosting security blocks
-        $max_allowed_timeout = 180; // 3 minutes max
+        $max_allowed_timeout = 300; // Increased to 5 minutes for complex YouTube article generation
         if ($timeout > $max_allowed_timeout) {
             error_log("Timeout capped from {$timeout} to {$max_allowed_timeout} seconds to prevent hosting security blocks");
             $timeout = $max_allowed_timeout;
@@ -133,13 +140,6 @@ trait Creator_AI_API {
             $status_code = wp_remote_retrieve_response_code($response);
             $body = wp_remote_retrieve_body($response);
             
-            // Log the response for debugging
-            // Log debug data
-            $debug_data = array(
-                'status_code' => $status_code,
-                'response' => json_decode($body, true)
-            );
-            error_log('OpenAI API Response: ' . json_encode($debug_data));
             
             // Check for HTTP error status codes
             if ($status_code >= 400) {
@@ -180,7 +180,7 @@ trait Creator_AI_API {
     }
     public function test_openai_api() {
         // Retrieve the API key and model.
-        $api_key = get_option('cai_openai_api_key');
+        $api_key = Creator_AI::get_credential('cai_openai_api_key');
         $model   = get_option('cai_openai_model');
         
         // If necessary, check if these are filled.
@@ -216,12 +216,32 @@ trait Creator_AI_API {
     public function test_google_api() {
         check_ajax_referer('cai_nonce', 'nonce');
         
-        $token = null; // Access token not available in static context
+        $token = $this->get_access_token();
         if (!$token) {
             wp_send_json_error("Failed to obtain access token.");
         }
         
-        wp_send_json_success("OAuth is working. Token (first 20 chars): " . substr($token, 0, 20) . "...");
+        // Test the token by making a simple API call to verify it works
+        $test_url = "https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=" . urlencode($token);
+        $response = cai_remote_get($test_url);
+        
+        if (is_wp_error($response)) {
+            wp_send_json_error("Google API Error: " . $response->get_error_message());
+        }
+        
+        $status_code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+        
+        if ($status_code !== 200) {
+            wp_send_json_error("Google API Error: Invalid token response (Status: " . $status_code . ")");
+        }
+        
+        if (isset($data['error'])) {
+            wp_send_json_error("Google API Error: " . $data['error']);
+        }
+        
+        wp_send_json_success("Google API connection successful. Your OAuth credentials are working properly.");
     }
     public function google_connect() {
         $client_id = get_option('cai_google_client_id');
@@ -254,7 +274,7 @@ trait Creator_AI_API {
         
         $code = sanitize_text_field($_GET['code']);
         $client_id = get_option('cai_google_client_id');
-        $client_secret = get_option('cai_google_client_secret');
+        $client_secret = Creator_AI::get_credential('cai_google_client_secret');
         $redirect_uri = admin_url('admin-post.php?action=cai_google_callback');
         
         $token_url = "https://oauth2.googleapis.com/token";
@@ -301,7 +321,7 @@ trait Creator_AI_API {
             }
             
             $client_id = get_option('cai_google_client_id');
-            $client_secret = get_option('cai_google_client_secret');
+            $client_secret = Creator_AI::get_credential('cai_google_client_secret');
             
             $token_url = "https://oauth2.googleapis.com/token";
             $args = array(
