@@ -225,8 +225,9 @@ trait Creator_AI_Security {
         switch ($option_name) {
             case 'cai_openai_api_key':
                 // OpenAI API keys typically start with 'sk-' and are 51+ chars
-                if (!preg_match('/^sk-[a-zA-Z0-9]{20,}$/', $value)) {
-                    return new WP_Error('invalid_openai_key', 'Invalid OpenAI API key format. Keys should start with "sk-" followed by alphanumeric characters.');
+                // Modern keys can contain hyphens and underscores (e.g., sk-proj-..., sk-svcacct-...)
+                if (!preg_match('/^sk-[a-zA-Z0-9_-]{20,}$/', $value)) {
+                    return new WP_Error('invalid_openai_key', 'Invalid OpenAI API key format. Keys should start with "sk-" followed by alphanumeric characters, hyphens, or underscores.');
                 }
                 break;
                 
