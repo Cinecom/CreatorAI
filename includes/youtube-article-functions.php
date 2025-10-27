@@ -686,16 +686,16 @@ trait Creator_AI_YouTube_Article_Functions {
         return $thumb_id;
     }
     protected function create_wordpress_post($title, $content, $pubdate, $thumb_id) {
-        // Convert YouTube's ISO 8601 date to WordPress format
-        // YouTube returns dates in UTC format like "2024-08-15T14:30:00Z"
-        $wordpress_date = date('Y-m-d H:i:s', strtotime($pubdate));
-        
+        // Use current date/time instead of video's publication date
+        $wordpress_date = current_time('mysql');
+        $wordpress_date_gmt = current_time('mysql', 1);
+
         $post_data = array(
             'post_title' => $title,
             'post_content' => $content,
             'post_status' => 'draft',
             'post_date' => $wordpress_date,
-            'post_date_gmt' => gmdate('Y-m-d H:i:s', strtotime($pubdate)), // Store UTC time as well
+            'post_date_gmt' => $wordpress_date_gmt,
             'post_name' => $this->generate_slug($title)
         );
         

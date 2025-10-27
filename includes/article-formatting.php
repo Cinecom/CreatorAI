@@ -514,6 +514,83 @@ trait Creator_AI_Article_Formatting {
 	}
 
 	// LINKS
+    /**
+     * Use AI to select the most relevant post from search results
+     *
+     * @param string $keyword The keyword being linked
+     * @param string $context The paragraph context where the keyword appears
+     * @param array $posts Array of WP_Post objects to choose from
+     * @return WP_Post|null The selected post or null if selection fails
+     */
+    protected function ai_select_best_post($keyword, $context, $posts) {
+        // If only one post, return it
+        if (count($posts) === 1) {
+            return $posts[0];
+        }
+
+        // If no posts or too many, return null or first
+        if (empty($posts)) {
+            return null;
+        }
+
+        try {
+            $api_key = Creator_AI::get_credential('cai_openai_api_key');
+            if (empty($api_key)) {
+                // Fallback to random selection if no API key
+                return $posts[array_rand($posts)];
+            }
+
+            // Prepare post options for AI
+            $post_list = array();
+            foreach ($posts as $index => $post) {
+                $post_list[] = ($index + 1) . ". [ID: " . $post->ID . "] " . $post->post_title;
+            }
+            $post_options = implode("\n", $post_list);
+
+            // Use lightweight model for quick selection
+            $model = 'gpt-4o-mini';
+
+            $prompt = "You are helping select the most relevant article to link to for a keyword.\n\n" .
+                     "Keyword: \"$keyword\"\n" .
+                     "Context: \"$context\"\n\n" .
+                     "Available articles:\n$post_options\n\n" .
+                     "Select the most relevant article for this keyword in this context. " .
+                     "Respond with ONLY the ID number (e.g., \"123\"). Do not include any other text.";
+
+            $data = array(
+                'model' => $model,
+                'messages' => array(
+                    array('role' => 'user', 'content' => $prompt)
+                ),
+                'temperature' => 0.7,
+                'max_tokens' => 10
+            );
+
+            $result = $this->openai_request($data, $api_key, 30);
+
+            if ($result && isset($result['choices'][0]['message']['content'])) {
+                $selected_id = trim($result['choices'][0]['message']['content']);
+                // Extract just the number
+                $selected_id = preg_replace('/[^0-9]/', '', $selected_id);
+
+                // Find the post with this ID
+                foreach ($posts as $post) {
+                    if ($post->ID == $selected_id) {
+                        return $post;
+                    }
+                }
+            }
+
+            // Fallback to random if AI selection fails
+            return $posts[array_rand($posts)];
+
+        } catch (Exception $e) {
+            error_log('AI article selection error: ' . $e->getMessage());
+            // Fallback to random selection
+            return $posts[array_rand($posts)];
+        }
+    }
+
     protected function add_internal_links($article_text) {
         // Get user-defined keywords
         $user_keywords = get_option('yta_internal_keywords', array());
@@ -532,17 +609,8 @@ trait Creator_AI_Article_Formatting {
             return $article_text;
         }
         
-        // Get posts for internal linking
-        $posts = get_posts(array(
-            'numberposts' => 15, 
-            'post_type' => 'post',
-            'post_status' => 'publish',
-            'orderby' => 'rand'
-        ));
-        
-        if (empty($posts)) {
-            return $article_text;
-        }
+        // Track used post IDs to avoid linking to the same post multiple times
+        $used_post_ids = array();
         
         // Use DOMDocument for parsing
         $dom = $this->create_dom_document($article_text);
@@ -584,19 +652,64 @@ trait Creator_AI_Article_Formatting {
                 
                 // Check for an exact case-insensitive match with word boundaries
                 if (preg_match('/\b(' . preg_quote($keyword, '/') . ')\b/i', $paragraph_text)) {
-                    // Find a relevant post by title match
+                    // Search for posts whose title or content is semantically related to the keyword
                     $matching_post = null;
-                    foreach ($posts as $post) {
-                        // Choose the first post we haven't linked to yet
-                        if (!in_array($post->ID, $linked_keywords)) {
-                            $matching_post = $post;
-                            break;
+
+                    // First, try to find posts with the keyword in the title (most relevant)
+                    $search_args = array(
+                        'numberposts' => 5,
+                        'post_type' => 'post',
+                        'post_status' => 'publish',
+                        's' => $keyword
+                    );
+
+                    // Only add post__not_in if we have posts to exclude
+                    if (!empty($used_post_ids)) {
+                        $search_args['post__not_in'] = $used_post_ids;
+                    }
+
+                    $posts_by_title = get_posts($search_args);
+
+                    // Use AI to select the best post from results
+                    if (!empty($posts_by_title)) {
+                        $matching_post = $this->ai_select_best_post($keyword, $paragraph_text, $posts_by_title);
+                    }
+
+                    // If no posts found with keyword in title/content, try searching for individual words
+                    if (!$matching_post && str_word_count($keyword) > 1) {
+                        $keyword_words = explode(' ', $keyword);
+                        foreach ($keyword_words as $word) {
+                            $word = trim($word);
+                            if (strlen($word) < 3) continue; // Skip very short words
+
+                            $word_search_args = array(
+                                'numberposts' => 5,
+                                'post_type' => 'post',
+                                'post_status' => 'publish',
+                                's' => $word
+                            );
+
+                            // Only add post__not_in if we have posts to exclude
+                            if (!empty($used_post_ids)) {
+                                $word_search_args['post__not_in'] = $used_post_ids;
+                            }
+
+                            $posts_by_word = get_posts($word_search_args);
+
+                            // Use AI to select the best post from results
+                            if (!empty($posts_by_word)) {
+                                $matching_post = $this->ai_select_best_post($keyword, $paragraph_text, $posts_by_word);
+                                break;
+                            }
                         }
                     }
-                    
+
                     if (!$matching_post) {
-                        continue; // No appropriate post found
+                        continue; // No semantically relevant post found
                     }
+
+                    // Track that we're using this post
+                    $used_post_ids[] = $matching_post->ID;
                     
                     // Create replacement with the link including a title attribute
                     $pattern = '/\b(' . preg_quote($keyword, '/') . ')\b/i';
@@ -610,7 +723,6 @@ trait Creator_AI_Article_Formatting {
                     
                     // Track what we've done
                     $linked_keywords[] = $keyword;
-                    $linked_keywords[] = $matching_post->ID; // Track used posts
                     $added_links++;
                     break;
                 }
