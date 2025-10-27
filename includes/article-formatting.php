@@ -105,63 +105,49 @@ trait Creator_AI_Article_Formatting {
 	protected function fix_html_markup($html) {
 	    // Use a more robust approach for HTML parsing
 	    libxml_use_internal_errors(true);
-	    $doc = new DOMDocument('1.0', 'UTF-8');
-	    
-	    // Add a wrapper to make parsing more reliable
-	    $wrapped_html = '<!DOCTYPE html><html><body>' . $html . '</body></html>';
-	    
+	    $doc = new DOMDocument();
+
 	    // Preserve GenerateBlocks comments by replacing them temporarily
 	    $pattern = '/<!-- wp:generateblocks\/([^>]+) -->/';
 	    $html = preg_replace_callback($pattern, function($matches) {
 	        return '<!-- GENERATEBLOCK_START:' . base64_encode($matches[0]) . ' -->';
 	    }, $html);
-	    
+
 	    $pattern = '/<!-- \/wp:generateblocks\/([^>]+) -->/';
 	    $html = preg_replace_callback($pattern, function($matches) {
 	        return '<!-- GENERATEBLOCK_END:' . base64_encode($matches[0]) . ' -->';
 	    }, $html);
-	    
+
+	    // Add a wrapper to make parsing more reliable
+	    $wrapped_html = '<!DOCTYPE html><html><body>' . $html . '</body></html>';
+
 	    // Load HTML with options to prevent tag structure changes
 	    $doc->loadHTML($wrapped_html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
-	    $doc->encoding = 'UTF-8';
-	    
+
 	    // Get just the body content
 	    $body = $doc->getElementsByTagName('body')->item(0);
 	    $fixed = '';
 	    foreach ($body->childNodes as $node) {
 	        $fixed .= $doc->saveHTML($node);
 	    }
-	    
+
 	    // Clean up libxml
 	    libxml_clear_errors();
 	    libxml_use_internal_errors(false);
-	    
+
 	    // Restore GenerateBlocks comments
 	    $pattern = '/<!-- GENERATEBLOCK_START:([^>]+) -->/';
 	    $fixed = preg_replace_callback($pattern, function($matches) {
 	        return base64_decode($matches[1]);
 	    }, $fixed);
-	    
+
 	    $pattern = '/<!-- GENERATEBLOCK_END:([^>]+) -->/';
 	    $fixed = preg_replace_callback($pattern, function($matches) {
 	        return base64_decode($matches[1]);
 	    }, $fixed);
-	    
-	    // Replace fancy characters with standard ASCII
-	    $fixed = str_replace(
-	        array("\xE2\x80\x9C", "\xE2\x80\x9D", "\xE2\x80\x98", "\xE2\x80\x99", "\xE2\x80\x93", "\xE2\x80\x94"), 
-	        array('"', '"', "'", "'", '-', '-'), 
-	        $fixed
-	    );
-	    
+
 	    // Fix broken GenerateBlocks closing tags (common issue)
 	    $fixed = preg_replace('/<\/p>\s*<\/a>/i', '</a></p>', $fixed);
-	    
-	    // Fix HTML entities that might be double-encoded
-	    $fixed = html_entity_decode($fixed, ENT_QUOTES, 'UTF-8');
-	    
-	    // Convert to pure ASCII
-	    $fixed = iconv('UTF-8', 'ASCII//TRANSLIT', $fixed);
 	           
 	    return $fixed;
 	}
@@ -687,13 +673,17 @@ trait Creator_AI_Article_Formatting {
         return $article_text;
     }
     protected function add_external_links($article_text) {
-      
+
         // Wrap the article in a temporary container.
         $wrapper = '<div id="article_wrapper">' . $article_text . '</div>';
         libxml_use_internal_errors(true);
-        $doc = new DOMDocument();
+        $doc = new DOMDocument('1.0', 'UTF-8');
+
+        // Encode HTML entities to preserve UTF-8 characters through DOMDocument processing
+        $wrapper = mb_convert_encoding($wrapper, 'HTML-ENTITIES', 'UTF-8');
+
         // Use proper encoding to avoid character issues.
-        $doc->loadHTML('<?xml encoding="UTF-8">' . $wrapper, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        $doc->loadHTML('<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>' . $wrapper . '</body></html>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
         libxml_clear_errors();
         
         $xpath = new DOMXPath($doc);
@@ -825,9 +815,10 @@ trait Creator_AI_Article_Formatting {
                                 while ($paragraph->firstChild) {
                                     $paragraph->removeChild($paragraph->firstChild);
                                 }
-                                
-                                $tempDoc = new DOMDocument();
-                                @$tempDoc->loadHTML('<div>' . $newHtml . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+
+                                $tempDoc = new DOMDocument('1.0', 'UTF-8');
+                                $newHtml_encoded = mb_convert_encoding($newHtml, 'HTML-ENTITIES', 'UTF-8');
+                                @$tempDoc->loadHTML('<!DOCTYPE html><html><body><div>' . $newHtml_encoded . '</div></body></html>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
                                 $newContent = $tempDoc->getElementsByTagName('div')->item(0);
                                 
                                 if ($newContent && $newContent->childNodes->length > 0) {
@@ -852,7 +843,10 @@ trait Creator_AI_Article_Formatting {
         foreach ($wrapperNode->childNodes as $child) {
             $innerHTML .= $doc->saveHTML($child);
         }
-        
+
+        // Decode HTML entities back to UTF-8
+        $innerHTML = html_entity_decode($innerHTML, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
         return $innerHTML;
     }
     protected function process_all_links($article_text) {
@@ -910,14 +904,17 @@ trait Creator_AI_Article_Formatting {
     // UTILITY
     protected function create_dom_document($html_content, $include_wrapper = true) {
         libxml_use_internal_errors(true);
-        $dom = new DOMDocument();
-        
+        $dom = new DOMDocument('1.0', 'UTF-8');
+
+        // Encode HTML entities to preserve UTF-8 characters through DOMDocument processing
+        $html_content = mb_convert_encoding($html_content, 'HTML-ENTITIES', 'UTF-8');
+
         if ($include_wrapper) {
-            $dom->loadHTML('<!DOCTYPE html><html><body>' . $html_content . '</body></html>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+            $dom->loadHTML('<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>' . $html_content . '</body></html>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
         } else {
-            $dom->loadHTML('<!DOCTYPE html><html><body>' . $html_content . '</body></html>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+            $dom->loadHTML('<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>' . $html_content . '</body></html>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
         }
-        
+
         return $dom;
     }
     protected function clean_dom_output($dom, $element = null) {
@@ -926,13 +923,16 @@ trait Creator_AI_Article_Formatting {
         } else {
             $output = $dom->saveHTML($element);
         }
-        
+
+        // Decode HTML entities back to UTF-8
+        $output = html_entity_decode($output, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
         // Clean up XML wrapper
         $output = preg_replace('/<\?xml encoding="UTF-8">\s*/', '', $output);
         $output = preg_replace('/<\/?div>/', '', $output);
-        
+
         libxml_clear_errors();
-        
+
         return $output;
     }
     protected function validate_api_credentials() {

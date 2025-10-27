@@ -321,6 +321,14 @@ trait Creator_AI_YouTube_Article_Functions {
         return $combined_data;
     }
     protected function process_article_content($article, $videoId, $transcript) {
+        // FIRST: Replace ALL UTF-8 special characters before ANY DOMDocument processing
+        // This prevents multiple layers of encoding corruption
+        $article = str_replace(
+            array("\xE2\x80\x9C", "\xE2\x80\x9D", "\xE2\x80\x98", "\xE2\x80\x99", "\xE2\x80\x93", "\xE2\x80\x94"),
+            array('"', '"', "'", "'", '-', '-'),
+            $article
+        );
+
         error_log('Creator AI Debug: process_article_content - Starting link processing at ' . date('Y-m-d H:i:s'));
         // 1. Process all links in one step
         $article = $this->process_all_links($article);
@@ -398,6 +406,13 @@ trait Creator_AI_YouTube_Article_Functions {
         // Build raw HTML content and store it for debugging.
         $raw_content = implode("\n\n", $paragraphs);
         update_option('yta_raw_content', $raw_content);
+
+        // Replace smart quotes and special characters BEFORE DOMDocument processing
+        $raw_content = str_replace(
+            array("\xE2\x80\x9C", "\xE2\x80\x9D", "\xE2\x80\x98", "\xE2\x80\x99", "\xE2\x80\x93", "\xE2\x80\x94"),
+            array('"', '"', "'", "'", '-', '-'),
+            $raw_content
+        );
 
         // Parse HTML content into DOMDocument.
         libxml_use_internal_errors(true);
@@ -945,9 +960,13 @@ trait Creator_AI_YouTube_Article_Functions {
             
             // Process the article content
             $article = trim($data['article']);
-            
-            // Convert any non-standard characters to ASCII
-            $article = iconv('UTF-8', 'ASCII//TRANSLIT', $article);
+
+            // Replace smart quotes and special characters with standard equivalents
+            $article = str_replace(
+                array("\xE2\x80\x9C", "\xE2\x80\x9D", "\xE2\x80\x98", "\xE2\x80\x99", "\xE2\x80\x93", "\xE2\x80\x94"),
+                array('"', '"', "'", "'", '-', '-'),
+                $article
+            );
             
             // Convert Markdown-style formatting to HTML (if needed)
             $article = preg_replace('/\*\*(.*?)\*\*/s', '<strong>$1</strong>', $article); // Bold
