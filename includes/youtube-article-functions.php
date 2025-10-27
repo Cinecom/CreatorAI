@@ -853,31 +853,34 @@ trait Creator_AI_YouTube_Article_Functions {
             }
         }
         
-        // Extract category names for the AI
-        $category_names = array();
-        if (!empty($categories)) {
-            $category_names = wp_list_pluck($categories, 'name');
-        }
-        
+        // Get hierarchical category structure for the AI
+        $category_data = $this->get_hierarchical_categories();
+        $category_list = isset($category_data['formatted_list']) ? $category_data['formatted_list'] : array();
+
+        error_log('Creator AI Debug: generate_combined_content - Category list has ' . count($category_list) . ' items');
+
         // Build a combined system prompt for all tasks
         $combined_system_prompt = "You are an expert content writer specializing in SEO. Complete the following tasks:\n\n";
         $combined_system_prompt .= "TASK 1: Write an article according to these instructions:\n{$articlePrompt}\n\n";
         $combined_system_prompt .= "TASK 2: Generate 3-5 SEO-friendly tags for the article (comma-separated).\n\n";
         $combined_system_prompt .= "TASK 3: Generate an SEO meta description (between 100-160 characters):\n{$seoPrompt}\n\n";
-        
+
         // Add category selection instructions if we have categories
-        if (!empty($category_names)) {
-            $combined_system_prompt .= "TASK 4: Select the SINGLE MOST APPROPRIATE category from this list:\n";
-            $combined_system_prompt .= "- " . implode("\n- ", $category_names) . "\n\n";
+        if (!empty($category_list)) {
+            $combined_system_prompt .= "TASK 4: Select the most appropriate category from this list:\n\n";
+            $combined_system_prompt .= implode("\n", $category_list) . "\n\n";
+            $combined_system_prompt .= "RULES: If selecting a sub-category (shown with '>'), use the exact format shown (e.g., 'Parent > Sub-category'). Otherwise, use just the category name.\n\n";
         }
-        
+
         $combined_system_prompt .= "Format your response as a JSON object with these keys:\n";
         $combined_system_prompt .= "- article: The complete HTML article content\n";
         $combined_system_prompt .= "- tags: Comma-separated list of tags\n";
         $combined_system_prompt .= "- meta_description: The SEO description\n";
-        if (!empty($category_names)) {
+        if (!empty($category_list)) {
             $combined_system_prompt .= "- category: The selected category name\n";
         }
+
+        error_log('Creator AI Debug: generate_combined_content - Prompt built, length: ' . strlen($combined_system_prompt));
         
         // Determine appropriate token limit based on model
         $model = $this->api_settings['openai_model'];
@@ -947,8 +950,14 @@ trait Creator_AI_YouTube_Article_Functions {
             }
             
             $data = json_decode($json, true);
-            
-            if (!is_array($data) || !isset($data['article'])) {        
+
+            error_log('Creator AI Debug: generate_combined_content - JSON decode result: ' . (is_array($data) ? 'SUCCESS' : 'FAILED'));
+            if (is_array($data)) {
+                error_log('Creator AI Debug: generate_combined_content - Data keys: ' . implode(', ', array_keys($data)));
+            }
+
+            if (!is_array($data) || !isset($data['article'])) {
+                error_log('Creator AI Debug: generate_combined_content - JSON parsing failed, using fallback');
                 // If JSON parsing failed, try to extract just the article content and return it
                 return array(
                     'article' => $response,
@@ -957,9 +966,14 @@ trait Creator_AI_YouTube_Article_Functions {
                     'category' => ''
                 );
             }
-            
+
             // Process the article content
             $article = trim($data['article']);
+
+            error_log('Creator AI Debug: generate_combined_content - Article length: ' . strlen($article));
+            error_log('Creator AI Debug: generate_combined_content - Tags: ' . (isset($data['tags']) ? $data['tags'] : 'NOT SET'));
+            error_log('Creator AI Debug: generate_combined_content - Meta desc: ' . (isset($data['meta_description']) ? $data['meta_description'] : 'NOT SET'));
+            error_log('Creator AI Debug: generate_combined_content - Category: ' . (isset($data['category']) ? $data['category'] : 'NOT SET'));
 
             // Replace smart quotes and special characters with standard equivalents
             $article = str_replace(
@@ -1014,46 +1028,137 @@ trait Creator_AI_YouTube_Article_Functions {
         error_log('Creator AI Debug: process_youtube_post_metadata - Starting category processing at ' . date('Y-m-d H:i:s'));
         // Set category if available
         if (!empty($combined_data['category']) && !isset($_POST['skipCategory'])) {
-            error_log('Creator AI Debug: process_youtube_post_metadata - Getting filtered categories at ' . date('Y-m-d H:i:s'));
-            $categories = $this->get_filtered_categories();
-            if (!empty($categories)) {
-                $cat_name = $combined_data['category'];
-                error_log('Creator AI Debug: process_youtube_post_metadata - AI suggested category: ' . $cat_name . ' at ' . date('Y-m-d H:i:s'));
-                
+            error_log('Creator AI Debug: process_youtube_post_metadata - Getting hierarchical categories at ' . date('Y-m-d H:i:s'));
+            $category_data = $this->get_hierarchical_categories();
+            $all_categories = $category_data['all_categories'];
+            $hierarchy = $category_data['hierarchy'];
+
+            if (!empty($all_categories)) {
+                $cat_selection = trim($combined_data['category']);
+                error_log('Creator AI Debug: process_youtube_post_metadata - AI suggested category: ' . $cat_selection . ' at ' . date('Y-m-d H:i:s'));
+
                 // Store the AI's suggestion for debugging
-                update_post_meta($post_id, '_category_ai_suggestion', $cat_name);
-                
-                // Find the category ID by name - exact match
-                $cat_id = null;
-                foreach ($categories as $c) {
-                    if (strtolower($c->name) === strtolower($cat_name)) {
-                        $cat_id = $c->term_id;
-                        break;
-                    }
-                }
-                
-                // If no exact match, try more flexible matching
-                if (!$cat_id) {
-                    foreach ($categories as $c) {
-                        // Try partial match
-                        if (stripos($c->name, $cat_name) !== false || stripos($cat_name, $c->name) !== false) {
-                            $cat_id = $c->term_id;
+                update_post_meta($post_id, '_category_ai_suggestion', $cat_selection);
+
+                $category_ids = array();
+
+                // Check if this is a hierarchical selection (contains ">")
+                if (strpos($cat_selection, '>') !== false) {
+                    // Parse hierarchical selection: "Parent > Sub-category"
+                    $parts = array_map('trim', explode('>', $cat_selection));
+                    $parent_name = isset($parts[0]) ? $parts[0] : '';
+                    $child_name = isset($parts[1]) ? $parts[1] : '';
+
+                    error_log('Creator AI Debug: Hierarchical selection - Parent: ' . $parent_name . ', Child: ' . $child_name);
+
+                    // Find parent category
+                    $parent_id = null;
+                    foreach ($all_categories as $cat) {
+                        if ($cat->parent == 0 && strcasecmp($cat->name, $parent_name) === 0) {
+                            $parent_id = $cat->term_id;
                             break;
                         }
                     }
+
+                    // Find child category
+                    $child_id = null;
+                    if ($parent_id) {
+                        foreach ($all_categories as $cat) {
+                            if ($cat->parent == $parent_id && strcasecmp($cat->name, $child_name) === 0) {
+                                $child_id = $cat->term_id;
+                                break;
+                            }
+                        }
+                    }
+
+                    // If both found, select both parent and child
+                    if ($parent_id && $child_id) {
+                        $category_ids = array($parent_id, $child_id);
+                        error_log('Creator AI Debug: Found parent ID: ' . $parent_id . ' and child ID: ' . $child_id);
+                    } else {
+                        error_log('Creator AI Debug: Failed to find parent or child category');
+                    }
+                } else {
+                    // Single category selection (no hierarchy indicator)
+                    // This should only match categories without children
+                    $matched = false;
+
+                    // Try exact match first
+                    foreach ($all_categories as $cat) {
+                        if (strcasecmp($cat->name, $cat_selection) === 0) {
+                            // Check if this category has children
+                            $has_children = false;
+                            if ($cat->parent == 0 && isset($hierarchy[$cat->term_id])) {
+                                $has_children = !empty($hierarchy[$cat->term_id]['children']);
+                            }
+
+                            if (!$has_children) {
+                                // This is a valid standalone category
+                                $category_ids = array($cat->term_id);
+                                $matched = true;
+                                error_log('Creator AI Debug: Matched standalone category: ' . $cat->name . ' (ID: ' . $cat->term_id . ')');
+                                break;
+                            } else {
+                                error_log('Creator AI Debug: Category "' . $cat->name . '" has children and cannot be selected alone');
+                            }
+                        }
+                    }
+
+                    // If no exact match, try partial matching
+                    if (!$matched) {
+                        foreach ($all_categories as $cat) {
+                            if (stripos($cat->name, $cat_selection) !== false || stripos($cat_selection, $cat->name) !== false) {
+                                // Check if this category has children
+                                $has_children = false;
+                                if ($cat->parent == 0 && isset($hierarchy[$cat->term_id])) {
+                                    $has_children = !empty($hierarchy[$cat->term_id]['children']);
+                                }
+
+                                if (!$has_children) {
+                                    $category_ids = array($cat->term_id);
+                                    $matched = true;
+                                    error_log('Creator AI Debug: Partial match found for standalone category: ' . $cat->name);
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
-                
-                // If still no match, use the first available category
-                if (!$cat_id && !empty($categories)) {
-                    $cat_id = $categories[0]->term_id;
-                    update_post_meta($post_id, '_category_fallback', 'Used first available: ' . $categories[0]->name);
+
+                // Fallback: if no categories matched, use first available standalone category
+                if (empty($category_ids)) {
+                    // First try to find a standalone category (without children)
+                    foreach ($hierarchy as $parent_id => $parent_data) {
+                        if (empty($parent_data['children'])) {
+                            // This parent has no children, can be used as fallback
+                            $category_ids = array($parent_id);
+                            update_post_meta($post_id, '_category_fallback', 'Used first available standalone: ' . $parent_data['cat']->name);
+                            error_log('Creator AI Debug: Using fallback standalone category: ' . $parent_data['cat']->name);
+                            break;
+                        }
+                    }
+
+                    // If still no match and all categories have children, use first parent + first child
+                    if (empty($category_ids)) {
+                        foreach ($hierarchy as $parent_id => $parent_data) {
+                            if (!empty($parent_data['children'])) {
+                                $first_child = $parent_data['children'][0];
+                                $category_ids = array($parent_id, $first_child->term_id);
+                                update_post_meta($post_id, '_category_fallback', 'Used first parent+child: ' . $parent_data['cat']->name . ' > ' . $first_child->name);
+                                error_log('Creator AI Debug: Using fallback parent+child: ' . $parent_data['cat']->name . ' > ' . $first_child->name);
+                                break;
+                            }
+                        }
+                    }
                 }
-                
-                // Assign category if ID found
-                if ($cat_id) {
-                    error_log('Creator AI Debug: process_youtube_post_metadata - Setting category ID: ' . $cat_id . ' at ' . date('Y-m-d H:i:s'));
-                    wp_set_post_categories($post_id, array($cat_id));
-                    error_log('Creator AI Debug: process_youtube_post_metadata - Category set at ' . date('Y-m-d H:i:s'));
+
+                // Assign categories if IDs found
+                if (!empty($category_ids)) {
+                    error_log('Creator AI Debug: process_youtube_post_metadata - Setting category IDs: ' . implode(', ', $category_ids) . ' at ' . date('Y-m-d H:i:s'));
+                    wp_set_post_categories($post_id, $category_ids);
+                    error_log('Creator AI Debug: process_youtube_post_metadata - Categories set at ' . date('Y-m-d H:i:s'));
+                } else {
+                    error_log('Creator AI Debug: No valid categories found to assign');
                 }
             }
         }

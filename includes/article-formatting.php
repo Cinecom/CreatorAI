@@ -50,6 +50,89 @@ trait Creator_AI_Article_Formatting {
 	    }
 	    return $filtered_cats;
 	}
+
+	/**
+	 * Get hierarchical category structure for AI processing
+	 * Returns array with 'formatted_list' for AI prompt and 'all_categories' for matching
+	 */
+	protected function get_hierarchical_categories() {
+	    try {
+	        $all_cats = $this->get_filtered_categories();
+
+	        if (empty($all_cats)) {
+	            error_log('Creator AI Debug: get_hierarchical_categories - No categories found');
+	            return array(
+	                'formatted_list' => array(),
+	                'all_categories' => array(),
+	                'hierarchy' => array()
+	            );
+	        }
+
+	        // Separate parent and child categories
+	        $parents = array();
+	        $children = array();
+
+	        foreach ($all_cats as $cat) {
+	            if (!isset($cat->parent) || !isset($cat->term_id) || !isset($cat->name)) {
+	                continue; // Skip malformed category objects
+	            }
+
+	            if ($cat->parent == 0) {
+	                // This is a parent category
+	                $parents[$cat->term_id] = array(
+	                    'cat' => $cat,
+	                    'children' => array()
+	                );
+	            } else {
+	                // This is a child category
+	                if (!isset($children[$cat->parent])) {
+	                    $children[$cat->parent] = array();
+	                }
+	                $children[$cat->parent][] = $cat;
+	            }
+	        }
+
+	        // Attach children to their parents
+	        foreach ($children as $parent_id => $child_list) {
+	            if (isset($parents[$parent_id])) {
+	                $parents[$parent_id]['children'] = $child_list;
+	            }
+	        }
+
+	        // Build formatted list for AI
+	        $formatted_list = array();
+	        foreach ($parents as $parent_data) {
+	            $parent = $parent_data['cat'];
+	            $has_children = !empty($parent_data['children']);
+
+	            if ($has_children) {
+	                // Parent with children - show hierarchy
+	                $formatted_list[] = $parent->name . " (parent category - must be selected with a sub-category):";
+	                foreach ($parent_data['children'] as $child) {
+	                    $formatted_list[] = "  └─ " . $parent->name . " > " . $child->name;
+	                }
+	            } else {
+	                // Parent without children - can be selected alone
+	                $formatted_list[] = $parent->name;
+	            }
+	        }
+
+	        error_log('Creator AI Debug: get_hierarchical_categories - Built ' . count($formatted_list) . ' formatted category entries');
+
+	        return array(
+	            'formatted_list' => $formatted_list,
+	            'all_categories' => $all_cats,
+	            'hierarchy' => $parents
+	        );
+	    } catch (Exception $e) {
+	        error_log('Creator AI Debug: get_hierarchical_categories - Error: ' . $e->getMessage());
+	        return array(
+	            'formatted_list' => array(),
+	            'all_categories' => array(),
+	            'hierarchy' => array()
+	        );
+	    }
+	}
 	protected function generate_image_block($attachment_id, $transcript, $use_generate_blocks = false, $skip_vision = false, $custom_caption = '') {
 	    // If we want to skip vision processing, use the provided caption and generate minimal metadata
 	    if ($skip_vision) {
