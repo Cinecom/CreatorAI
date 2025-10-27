@@ -133,7 +133,7 @@ trait Creator_AI_Article_Formatting {
 	        );
 	    }
 	}
-	protected function generate_image_block($attachment_id, $transcript, $use_generate_blocks = false, $skip_vision = false, $custom_caption = '') {
+	protected function generate_image_block($attachment_id, $transcript, $use_generate_blocks = false, $skip_vision = false, $custom_caption = '', $video_title = '') {
 	    // If we want to skip vision processing, use the provided caption and generate minimal metadata
 	    if ($skip_vision) {
 	        $alt = get_post_meta($attachment_id, '_wp_attachment_image_alt', true);
@@ -145,7 +145,7 @@ trait Creator_AI_Article_Formatting {
 	    } else {
 	        // Generate SEO metadata for the image using vision (original behavior)
 	        try {
-	            $seo = $this->generate_image_seo_text($attachment_id, $transcript);
+	            $seo = $this->generate_image_seo_text($attachment_id, $transcript, $video_title);
 	            $alt = isset($seo['alt_text']) ? $seo['alt_text'] : 'Video image';
 	            $caption = isset($seo['caption']) ? $seo['caption'] : '';
 	            $filename = isset($seo['filename']) ? $seo['filename'] : sanitize_title($alt);

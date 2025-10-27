@@ -239,7 +239,8 @@ trait Creator_AI_YouTube_Article_Functions {
             $processed_content = $this->process_article_content(
                 $article_data['article'],
                 $videoId,
-                $video_data['transcript']
+                $video_data['transcript'],
+                $video_data['title']
             );
             error_log('Creator AI Debug: STEP 4 - Article processing completed at ' . date('Y-m-d H:i:s'));
             
@@ -320,7 +321,7 @@ trait Creator_AI_YouTube_Article_Functions {
         
         return $combined_data;
     }
-    protected function process_article_content($article, $videoId, $transcript) {
+    protected function process_article_content($article, $videoId, $transcript, $video_title = '') {
         // FIRST: Replace ALL UTF-8 special characters before ANY DOMDocument processing
         // This prevents multiple layers of encoding corruption
         $article = str_replace(
@@ -355,11 +356,12 @@ trait Creator_AI_YouTube_Article_Functions {
         $is_generate_blocks = is_plugin_active("generateblocks/plugin.php");
         
         $final_content = $this->format_youtube_content(
-            $paragraphs, 
-            $videoId, 
-            $uploaded_images, 
-            $transcript, 
-            $is_generate_blocks
+            $paragraphs,
+            $videoId,
+            $uploaded_images,
+            $transcript,
+            $is_generate_blocks,
+            $video_title
         );
         error_log('Creator AI Debug: process_article_content - Content formatting completed at ' . date('Y-m-d H:i:s'));
         
@@ -400,7 +402,7 @@ trait Creator_AI_YouTube_Article_Functions {
         
         return $post_id;
     }
-    protected function format_youtube_content($paragraphs, $videoId, $uploaded_images, $transcript, $use_generate_blocks = false) {
+    protected function format_youtube_content($paragraphs, $videoId, $uploaded_images, $transcript, $use_generate_blocks = false, $video_title = '') {
         $final_content = "";
 
         // Build raw HTML content and store it for debugging.
@@ -592,7 +594,7 @@ trait Creator_AI_YouTube_Article_Functions {
             // Insert image block after every $img_interval elements.
             if ((($i + 1) % $img_interval == 0) && ($img_index < $total_images)) {
                 try {
-                    $final_content .= $this->generate_image_block($uploaded_images[$img_index], $transcript, $use_generate_blocks, false);
+                    $final_content .= $this->generate_image_block($uploaded_images[$img_index], $transcript, $use_generate_blocks, false, '', $video_title);
                 } catch (Exception $e) {
                     $img_url = wp_get_attachment_url($uploaded_images[$img_index]);
                     if ($img_url) {
@@ -621,7 +623,7 @@ trait Creator_AI_YouTube_Article_Functions {
         // Append any remaining images.
         while ($img_index < $total_images) {
             try {
-                $final_content .= $this->generate_image_block($uploaded_images[$img_index], $transcript, $use_generate_blocks, false);
+                $final_content .= $this->generate_image_block($uploaded_images[$img_index], $transcript, $use_generate_blocks, false, '', $video_title);
             } catch (Exception $e) {
                 $img_url = wp_get_attachment_url($uploaded_images[$img_index]);
                 if ($img_url) {
@@ -1202,7 +1204,7 @@ trait Creator_AI_YouTube_Article_Functions {
 // SEO AND METADATA
 
 
-    protected function generate_image_seo_text($attachment_id, $transcript) {
+    protected function generate_image_seo_text($attachment_id, $transcript, $video_title = '') {
         // Start with fallback values in case of timeout
         $fallback = array(
             'alt_text' => 'Video content image',
@@ -1243,7 +1245,7 @@ trait Creator_AI_YouTube_Article_Functions {
                         "content" => array(
                             array(
                                 "type" => "text", 
-                                "text" => "Analyze this image and create SEO-friendly metadata. Provide a JSON response with: 'alt_text' (3-5 words describing the image), 'caption' (one descriptive sentence), and 'filename' (SEO-friendly filename without extension). Make it relevant to video content."
+                                "text" => "You are analyzing an image for an article" . (!empty($video_title) ? " titled: \"" . $video_title . "\"" : "") . ".\n\nArticle context (transcript excerpt):\n" . substr($transcript, 0, 2000) . "\n\nAnalyze the image and describe SPECIFICALLY what you see in it. Create SEO-friendly metadata:\n\n1. 'alt_text': 3-5 words describing the SPECIFIC visual elements in the image (not generic)\n2. 'caption': One sentence describing EXACTLY what is visible in the image and how it relates to the article topic. Be concrete and specific about colors, objects, people, actions, text, or interface elements you can see.\n3. 'filename': SEO-friendly filename based on the specific content\n\nReturn JSON format only. Avoid generic phrases like 'video content image' or 'related to topic' - instead describe the actual visible elements."
                             ),
                             array(
                                 "type" => "image_url",
