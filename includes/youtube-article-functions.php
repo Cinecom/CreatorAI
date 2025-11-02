@@ -896,13 +896,14 @@ trait Creator_AI_YouTube_Article_Functions {
         // Build request data
         $data = array(
             "model" => $model,
+            "response_format" => array("type" => "json_object"),
             "messages" => array(
                 array(
-                    "role" => "system", 
-                    "content" => $combined_system_prompt 
+                    "role" => "system",
+                    "content" => $combined_system_prompt
                 ),
                 array(
-                    "role" => "user", 
+                    "role" => "user",
                     "content" => "Title: " . $title . "\n\nTranscript:\n" . $transcript
                 )
             ),
@@ -935,31 +936,44 @@ trait Creator_AI_YouTube_Article_Functions {
             
             // Save the raw AI response for debugging
             update_option('yta_last_raw_response', $response);
-            
-            // Extract JSON from the response
-            preg_match('/```json\s*(.*?)\s*```/s', $response, $json_matches);
-            if (!empty($json_matches[1])) {
-                $json = trim($json_matches[1]);
-            } else {
-                // Try to find JSON without the code blocks
-                preg_match('/\{.*\}/s', $response, $json_matches);
-                if (!empty($json_matches[0])) {
-                    $json = $json_matches[0];
-                } else {
-                    // Fallback to using the entire response
-                    $json = $response;
+
+            // With response_format set to json_object, the response should be valid JSON
+            // Try to decode the response directly first
+            $data = json_decode($response, true);
+
+            // If direct decode fails, try extracting from code blocks
+            if (!is_array($data)) {
+                error_log('Creator AI Debug: Direct JSON decode failed, trying code block extraction. Error: ' . json_last_error_msg());
+
+                preg_match('/```json\s*(.*?)\s*```/s', $response, $json_matches);
+                if (!empty($json_matches[1])) {
+                    $json = trim($json_matches[1]);
+                    $data = json_decode($json, true);
+                    error_log('Creator AI Debug: Code block extraction attempted');
+                }
+
+                // If still failed, try finding JSON object with improved regex
+                if (!is_array($data)) {
+                    // Use a better regex that properly handles nested braces
+                    preg_match('/\{(?:[^{}]|(?R))*\}/s', $response, $json_matches);
+                    if (!empty($json_matches[0])) {
+                        $data = json_decode($json_matches[0], true);
+                        error_log('Creator AI Debug: Nested brace extraction attempted');
+                    }
                 }
             }
-            
-            $data = json_decode($json, true);
 
             error_log('Creator AI Debug: generate_combined_content - JSON decode result: ' . (is_array($data) ? 'SUCCESS' : 'FAILED'));
             if (is_array($data)) {
                 error_log('Creator AI Debug: generate_combined_content - Data keys: ' . implode(', ', array_keys($data)));
+            } else {
+                error_log('Creator AI Debug: JSON Error Details: ' . json_last_error_msg());
+                error_log('Creator AI Debug: Response preview: ' . substr($response, 0, 300));
             }
 
             if (!is_array($data) || !isset($data['article'])) {
-                error_log('Creator AI Debug: generate_combined_content - JSON parsing failed, using fallback');
+                error_log('Creator AI WARNING: JSON parsing failed completely! Metadata (tags, excerpt, category) will be MISSING!');
+                error_log('Creator AI WARNING: Raw response saved to yta_last_raw_response option for debugging');
                 // If JSON parsing failed, try to extract just the article content and return it
                 return array(
                     'article' => $response,
@@ -976,6 +990,17 @@ trait Creator_AI_YouTube_Article_Functions {
             error_log('Creator AI Debug: generate_combined_content - Tags: ' . (isset($data['tags']) ? $data['tags'] : 'NOT SET'));
             error_log('Creator AI Debug: generate_combined_content - Meta desc: ' . (isset($data['meta_description']) ? $data['meta_description'] : 'NOT SET'));
             error_log('Creator AI Debug: generate_combined_content - Category: ' . (isset($data['category']) ? $data['category'] : 'NOT SET'));
+
+            // Validate that all metadata fields are present
+            $missing_fields = array();
+            if (empty($data['tags'])) $missing_fields[] = 'tags';
+            if (empty($data['meta_description'])) $missing_fields[] = 'meta_description';
+            if (empty($data['category'])) $missing_fields[] = 'category';
+
+            if (!empty($missing_fields)) {
+                error_log('Creator AI WARNING: AI response missing fields: ' . implode(', ', $missing_fields));
+                error_log('Creator AI WARNING: These metadata fields will be empty in the generated post');
+            }
 
             // Replace smart quotes and special characters with standard equivalents
             $article = str_replace(
